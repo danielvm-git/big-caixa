@@ -35,7 +35,9 @@ npm run sync
 
 ## Deploy (GitHub Actions)
 
-Workflows em `.github/workflows/` (templates v1 de `danielvm-git/.github`).
+Workflows em `.github/workflows/` (templates v1 de `danielvm-git/.github`). Versão e GitHub Release:
+[`big-release`](https://github.com/danielvm-git/big-release) com config em `.big-release.yml` (substitui
+semantic-release nos templates estáticos antigos).
 
 **O job Deploy falha até existir:**
 

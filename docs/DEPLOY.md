@@ -19,7 +19,7 @@ credenciais do BigBase e **não foram executados** (não há segredo neste ambie
 
    Passo a passo BigBase MCP: [discussão 192](https://github.com/danielvm-git/bigbase/discussions/192).
 
-5. Push na `main` dispara `Test Build Release` e, se verde, `Deploy`.
+5. Push na `main` dispara `Test Build Release` (release via **big-release** / `.big-release.yml`) e, se verde, `Deploy`.
    O `deploy.yml` baixa `deploy-meta.json`, chama a action `@v1` e faz 8 tentativas de health.
 6. Conferir:
 
