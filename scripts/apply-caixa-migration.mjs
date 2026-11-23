@@ -29,7 +29,8 @@ for (const branch of branches) {
 		await client.query(sql);
 		console.log(`${branch}: migration ok`);
 	} catch (err) {
-		console.error(`${branch}: migration failed`);
+		const msg = err instanceof Error ? err.message : String(err);
+		console.error(`${branch}: migration failed — ${msg}`);
 		process.exitCode = 1;
 	} finally {
 		await client.end();
