@@ -1,7 +1,12 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { Pool } from 'pg';
 
-const ORIGINS = new Set(['https://big-caixa.bigbase.click']);
+const ORIGINS = new Set(
+	[
+		'https://big-caixa.bigbase.click',
+		...(process.env.CAIXA_CORS_ORIGINS?.split(',').map((s) => s.trim()) ?? [])
+	].filter(Boolean)
+);
 
 const pool = new Pool({
 	connectionString: process.env.DATABASE_URL,
@@ -85,13 +90,22 @@ async function rows(colecao, periodo) {
 	}
 	if (colecao === 'compra') {
 		const q = await pool.query(
-			`SELECT id, data, loja, coalesce(titulo, descricao, '') AS titulo,
-			        valor_total_centavos::float8 AS valor_total_centavos,
-			        valor_pago_centavos::float8 AS valor_pago_centavos,
-			        parcelas, parcelas_pagas, estornada, conta_id,
-			        categoria_id, coalesce(escopo, '') AS escopo
-			 FROM caixa.compra
-			 ORDER BY data DESC`
+			`SELECT c.id, c.data, c.loja, coalesce(c.titulo, c.descricao, '') AS titulo,
+			        c.valor_total_centavos::float8 AS valor_total_centavos,
+			        c.valor_pago_centavos::float8 AS valor_pago_centavos,
+			        c.parcelas, c.parcelas_pagas, c.estornada, c.conta_id,
+			        c.categoria_id, coalesce(c.escopo, '') AS escopo,
+			        p.pessoa_id
+			 FROM caixa.compra c
+			 LEFT JOIN LATERAL (
+			   SELECT l.pessoa_id
+			   FROM caixa.compra_lancamento cl
+			   JOIN caixa.fato_lancamento l ON l.id = cl.lancamento_id
+			   WHERE cl.compra_id = c.id AND l.pessoa_id IS NOT NULL
+			   GROUP BY l.pessoa_id
+			   HAVING COUNT(DISTINCT l.pessoa_id) = 1
+			 ) p ON true
+			 ORDER BY c.data DESC`
 		);
 		return q.rows;
 	}
@@ -204,7 +218,46 @@ async function rows(colecao, periodo) {
 	}
 	if (colecao === 'pessoas') {
 		const q = await pool.query(
-			`SELECT id, nome, coalesce(relacao, '') AS relacao FROM caixa.dim_pessoa ORDER BY nome`
+			`SELECT p.id, p.nome, coalesce(p.relacao, '') AS relacao,
+			        coalesce(p.apelido, '') AS apelido,
+			        coalesce(p.circulo, '') AS circulo,
+			        coalesce(p.aniversario, '') AS aniversario,
+			        coalesce(p.visibilidade, 'familia') AS visibilidade,
+			        coalesce(
+			          (SELECT json_agg(a.alias ORDER BY a.alias)
+			           FROM caixa.dim_pessoa_alias a WHERE a.pessoa_id = p.id),
+			          '[]'
+			        ) AS aliases
+			 FROM caixa.dim_pessoa p
+			 ORDER BY coalesce(p.circulo, ''), p.nome`
+		);
+		return q.rows;
+	}
+	if (colecao === 'lugares') {
+		const q = await pool.query(
+			`SELECT id, nome, coalesce(tipo, 'outro') AS tipo FROM caixa.dim_lugar ORDER BY nome`
+		);
+		return q.rows;
+	}
+	if (colecao === 'vinculos') {
+		const q = await pool.query(
+			`SELECT id, tipo, de_pessoa_id, para_pessoa_id, compra_id,
+			        valor_centavos::float8 AS valor_centavos,
+			        parcelas, juros_pct::float8 AS juros_pct, prazo, status, coalesce(nota, '') AS nota
+			 FROM caixa.fato_vinculo ORDER BY criado_em DESC`
+		);
+		return q.rows;
+	}
+	if (colecao === 'contratos') {
+		const q = await pool.query(
+			`SELECT id, pessoa_id, coalesce(regime, '') AS regime,
+			        salario_centavos::float8 AS salario_centavos,
+			        inss_patronal_pct::float8 AS inss_patronal_pct,
+			        fgts_pct::float8 AS fgts_pct,
+			        vt_centavos::float8 AS vt_centavos,
+			        coalesce(banco_pagador, '') AS banco_pagador,
+			        coalesce(inicio, '') AS inicio, ativo
+			 FROM caixa.dim_contrato WHERE ativo = 1 ORDER BY inicio DESC`
 		);
 		return q.rows;
 	}

@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { goto } from '$app/navigation';
+import { caixaWrite } from '$lib/write/caixa';
 import {
 	CATEGORIAS,
 	CONTAS,
@@ -14,6 +15,8 @@ import {
 import {
 	baselineMes,
 	carregarAno,
+	resumoDevem,
+	visaoGeralAno,
 	chavesDoAno,
 	desenharSankey,
 	fetchLedger,
@@ -28,11 +31,18 @@ import {
 } from './ledger';
 const PATH = {
 	hoje: '/hoje/',
+	visao: '/visao/',
 	fluxo: '/fluxo/',
 	mes: '/mes/',
 	compras: '/compras/',
 	viagens: '/viagens/',
 	projetos: '/projetos/',
+	mapa: '/mapa/',
+	pessoas: '/pessoas/',
+	pessoa: '/pessoa/',
+	empregados: '/empregados/',
+	custo: '/custo/',
+	devem: '/devem/',
 	ano: '/ano/',
 	metas: '/metas/',
 	importar: '/importar/',
@@ -42,6 +52,8 @@ const PATH = {
 	conta: '/conta/',
 	mobile: '/mobile/'
 };
+
+const ROUTE_CASA = new Set(['mapa', 'pessoas', 'pessoa', 'empregados', 'custo', 'devem']);
 
 function dataCurta(iso) {
 	const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
@@ -99,6 +111,11 @@ export class Book {
 		proj: 'cozinha',
 		cut: 10,
 		closeStep: -1,
+		pessoaId: null,
+		modalLm: null,
+		modalAm: false,
+		wzStep: -1,
+		novaPessoaNome: '',
 		expired: false,
 		cnt: 0,
 		openRef: null,
@@ -133,7 +150,7 @@ export class Book {
 				id: 3,
 				date: '21/11',
 				loja: 'Amazon',
-				titulo: 'Mochila escolar da Helena',
+				titulo: 'Mochila escolar da Olivia',
 				cat: null,
 				parc: '1/3',
 				total: 389.7,
@@ -334,7 +351,7 @@ export class Book {
 		Viagens: 'D',
 		Previdência: 'F',
 		Reserva: 'F',
-		'Poupança da Helena': 'F'
+		'Poupança da Olivia': 'F'
 	};
 	CV = [
 		['Moradia', 5200, 5200],
@@ -398,7 +415,7 @@ export class Book {
 			dest: 'Lisboa',
 			datas: '04/07 – 24/07',
 			dias: 21,
-			nota: 'Três semanas com a Helena: Alfama, Sintra de trem e dois dias no Porto. O pastel de Belém virou rotina.',
+			nota: 'Três semanas com a Olivia: Alfama, Sintra de trem e dois dias no Porto. O pastel de Belém virou rotina.',
 			c: [
 				['17/03', 'TAP Air Portugal', '3 passagens', 'Passagens', 7800, 4680, true],
 				['02/05', 'Booking · Casa Alfama', '14 noites', 'Hospedagem', 3900, 3900, true],
@@ -452,7 +469,7 @@ export class Book {
 			]
 		},
 		festa: {
-			nome: 'Aniversário da Helena',
+			nome: 'Aniversário da Olivia',
 			per: '01/09 – 14/09',
 			ic: 'ph ph-cake',
 			orc: 4500,
@@ -464,7 +481,7 @@ export class Book {
 			]
 		},
 		quarto: {
-			nome: 'Quarto da Helena',
+			nome: 'Quarto da Olivia',
 			per: '05/11 – 30/11',
 			ic: 'ph ph-bed',
 			orc: 5500,
@@ -529,11 +546,18 @@ export class Book {
 	title(r) {
 		return {
 			hoje: 'Hoje',
+			visao: 'Visão geral do ano',
 			fluxo: 'Fluxo de caixa',
 			mes: 'Mês e categorias',
 			compras: 'Compras e lançamentos',
 			viagens: 'Viagens e férias',
 			projetos: 'Projetos',
+			mapa: 'Mapa da casa',
+			pessoas: 'Pessoas',
+			pessoa: 'Pessoa',
+			empregados: 'Empregados',
+			custo: 'Custo e pagamentos',
+			devem: 'Quem deve a quem',
 			ano: 'Ano e projeção',
 			metas: '50/30/20 e metas',
 			importar: 'Importar',
@@ -593,10 +617,49 @@ export class Book {
 	unmountKeys() {
 		document.removeEventListener('keydown', this._k);
 	}
+	async reloadLedger() {
+		await this.loadLedger(this.state.email);
+	}
+	openPessoa(id) {
+		this.setState({ pessoaId: id, route: 'pessoa', hist: [...this.state.hist, this.state.route] });
+		this.open('pessoa');
+	}
+	async gravarPessoa(payload) {
+		try {
+			await caixaWrite({ op: 'upsert_pessoa', ...payload });
+			await this.reloadLedger();
+			this.set({ modalAm: false });
+			this.toast('Pessoa registrada no livro');
+		} catch {
+			this.toast('Não foi possível gravar agora');
+		}
+	}
+	async gravarVinculo(payload) {
+		try {
+			await caixaWrite({ op: 'criar_vinculo', ...payload });
+			await this.reloadLedger();
+			this.set({ modalLm: null });
+			this.toast('Registro criado');
+		} catch {
+			this.toast('Não foi possível gravar agora');
+		}
+	}
+	async gravarLugar(payload) {
+		try {
+			await caixaWrite({ op: 'upsert_lugar', ...payload });
+			await this.reloadLedger();
+			this.toast('Lugar salvo');
+		} catch {
+			this.toast('Não foi possível gravar agora');
+		}
+	}
 	async loadLedger(email) {
 		try {
 			const ledger = await fetchLedger();
-			if (!ledger) return;
+			if (!ledger) {
+				this.setState({ real: true, ledgerError: true, ledger: null });
+				return;
+			}
 			this.setState({
 				ledger,
 				real: true,
@@ -645,21 +708,29 @@ export class Book {
 				if (esc && c.escopo !== esc) return false;
 				return true;
 			})
-			.map((c) => ({
-				id: c.id,
-				date: dataCurta(c.data),
-				loja: c.loja,
-				titulo: c.titulo || '',
-				cat: categoria(c.categoria_id).nome,
-				parc: (c.parcelas_pagas ?? 1) + '/' + (c.parcelas ?? 1),
-				total: (c.valor_total_centavos || 0) / 100,
-				pago: ((c.valor_pago_centavos ?? c.valor_total_centavos) || 0) / 100,
-				estornada: !!c.estornada,
-				orig: escopoNome(c.escopo),
-				extra: false,
-				sub: false,
-				pendente: PENDENTE.has(c.categoria_id || '')
-			}))
+			.map((c) => {
+				const pessoa =
+					c.pessoa_id &&
+					s.ledger.pessoas.find((p) => p.id === c.pessoa_id);
+				const pn = pessoa ? pessoa.apelido || pessoa.nome : null;
+				return {
+					id: c.id,
+					date: dataCurta(c.data),
+					loja: c.loja,
+					titulo: c.titulo || '',
+					cat: categoria(c.categoria_id).nome,
+					parc: (c.parcelas_pagas ?? 1) + '/' + (c.parcelas ?? 1),
+					total: (c.valor_total_centavos || 0) / 100,
+					pago: ((c.valor_pago_centavos ?? c.valor_total_centavos) || 0) / 100,
+					estornada: !!c.estornada,
+					orig: escopoNome(c.escopo),
+					extra: false,
+					sub: false,
+					pendente: PENDENTE.has(c.categoria_id || ''),
+					pessoa: pn,
+					hasP: !!pn
+				};
+			})
 			.slice(0, 400);
 	}
 	visRows() {
@@ -739,7 +810,7 @@ export class Book {
 				F: [
 					['Previdência', 1.8],
 					['Reserva', 1.5],
-					['Poupança da Helena', 0.8]
+					['Poupança da Olivia', 0.8]
 				]
 			},
 			bb = { N: 10.9, D: 4.08, F: 4.1 };
@@ -865,7 +936,15 @@ export class Book {
 					F: '#b69be0',
 					sky: '#232842',
 					terraBg: '#3a2a30',
-					mossBg: '#243a33'
+					mossBg: '#243a33',
+					leaf: '#5a8f52',
+					plum: '#9a6a9c',
+					sand: '#4a4230',
+					wall: '#2a2838',
+					roomA: '#2d3a52',
+					roomB: '#243a33',
+					roomC: '#3a2a30',
+					roomD: '#272b44'
 				}
 			: {
 					bg: '#f7f0df',
@@ -883,7 +962,15 @@ export class Book {
 					F: '#7a4fa8',
 					sky: '#cfe3ee',
 					terraBg: '#f8e3d9',
-					mossBg: '#dfecd5'
+					mossBg: '#dfecd5',
+					leaf: '#8fb67a',
+					plum: '#6a3d6b',
+					sand: '#ecd8a8',
+					wall: '#fbf3e1',
+					roomA: '#cfe3ee',
+					roomB: '#dfecd5',
+					roomC: '#f8e3d9',
+					roomD: '#f0e7d1'
 				};
 		const themeStyle =
 			'display:flex;min-height:100vh;height:100vh;overflow:hidden;font-family:Inter,system-ui,sans-serif;font-size:14px;color:var(--ink);background:var(--bg);' +
@@ -905,6 +992,7 @@ export class Book {
 				label: 'Entender',
 				ic: 'ph ph-magnifying-glass',
 				subs: [
+					['visao', 'Visão geral do ano'],
 					['fluxo', 'Fluxo de caixa'],
 					['mes', 'Mês e categorias'],
 					['compras', 'Compras e lançamentos']
@@ -917,6 +1005,18 @@ export class Book {
 				subs: [
 					['viagens', 'Viagens e férias'],
 					['projetos', 'Projetos']
+				]
+			},
+			{
+				id: 'casa',
+				label: 'Nossa casa',
+				ic: 'ph ph-house-line',
+				subs: [
+					['mapa', 'Mapa da casa'],
+					['pessoas', 'Pessoas'],
+					['empregados', 'Empregados'],
+					['custo', 'Custo e pagamentos'],
+					['devem', 'Quem deve a quem']
 				]
 			},
 			{
@@ -940,7 +1040,9 @@ export class Book {
 				]
 			}
 		];
-		const momOf = MOM.find((m) => m.subs.some((x) => x[0] === route));
+		const momOf =
+			MOM.find((m) => m.subs.some((x) => x[0] === route)) ??
+			(ROUTE_CASA.has(route) ? MOM.find((m) => m.id === 'casa') : undefined);
 		const nav = MOM.map((m, i) => ({
 			label: m.label,
 			ic: m.ic,
@@ -960,11 +1062,18 @@ export class Book {
 		const flags = {};
 		[
 			'hoje',
+			'visao',
 			'fluxo',
 			'mes',
 			'compras',
 			'viagens',
 			'projetos',
+			'mapa',
+			'pessoas',
+			'pessoa',
+			'empregados',
+			'custo',
+			'devem',
 			'ano',
 			'metas',
 			'importar',
@@ -1120,7 +1229,7 @@ export class Book {
 					? [
 							['Previdência', 1800],
 							['Reserva', 1500],
-							['Poupança da Helena', 800]
+							['Poupança da Olivia', 800]
 						]
 					: bc.map((c) => [c.n, c.v]);
 			const t = items.reduce((a, b) => a + b[1], 0);
@@ -1306,7 +1415,9 @@ export class Book {
 					total: c2(pr.total),
 					pago: c2(pr.pago),
 					conta: pr.orig === 'Cartão' ? 'Itaú Visa · fatura out/26' : 'Itaú Conta',
-					chip: () => this.set({ picker: pr.id })
+					chip: () => this.set({ picker: pr.id }),
+					paraQuem: pr.pessoa || 'ninguém ainda',
+					openLm: () => this.openModalLm(pr.id)
 				}
 			: {};
 		// viagens
@@ -1526,6 +1637,30 @@ export class Book {
 			pj = { nome: P.nome, items: P.items.map((i) => ({ d: i[0], n: i[1], v: R(i[2]) })) };
 		// ano
 		const anoSerie = s.ledger ? carregarAno(s.ledger, s.ledger.year) : null;
+		const visaoRaw = s.ledger ? visaoGeralAno(s.ledger, s.ledger.year) : [];
+		const visaoRows = visaoRaw.map((r) => ({
+			l: r.label,
+			v: r.cells.map((c) => ({
+				t: c.projetado && c.v ? c2(c.v) : c2(c.v),
+				mut: c.projetado
+			})),
+			m: c2(r.media),
+			t: c2(r.total),
+			fs: r.kind === 'summary' ? '13px' : '12px',
+			fw: r.kind === 'summary' ? 600 : 400,
+			bg: r.kind === 'summary' ? 'var(--sf2)' : 'transparent',
+			pl: r.kind === 'category' ? '12px' : '0',
+			go: r.categoriaId
+				? () =>
+						this.drill('compras', {
+							filt: {
+								cat: categoria(r.categoriaId).nome,
+								label: categoria(r.categoriaId).nome
+							},
+							cur: 0
+						})
+				: null
+		}));
 		const mx2 = anoSerie ? Math.max(...anoSerie.map((r) => totalResumo(r)), 1) : 26000;
 		const ybars = anoSerie
 			? anoSerie.map((r, i) => ({
@@ -1588,7 +1723,7 @@ export class Book {
 		const goals = [
 			['Reserva de emergência (6 meses)', 62000, 108000],
 			['Viagem 2027', 9000, 25000],
-			['Faculdade da Helena', 34000, 120000],
+			['Faculdade da Olivia', 34000, 120000],
 			['Previdência 2026', 19800, 24000]
 		].map(([n, a, b]) => ({ n, t: R(a) + ' de ' + R(b), w: (a / b) * 100 + '%' }));
 		const files = s.ledger
@@ -1770,6 +1905,16 @@ export class Book {
 				k: 'Compra',
 				n: r.loja + ' · ' + r.titulo,
 				go: () => this.drill('compras', { panel: r.id })
+			})),
+			...(s.ledger?.pessoas ?? []).map((p) => ({
+				k: 'Pessoa',
+				n: p.apelido || p.nome,
+				go: () => this.openPessoa(p.id)
+			})),
+			...(s.ledger?.lugares ?? []).map((l) => ({
+				k: 'Lugar',
+				n: l.nome,
+				go: () => this.nav('mapa')
 			}))
 		];
 		const cmdList = items
@@ -1785,16 +1930,70 @@ export class Book {
 		// fechar
 		const cst = s.closeStep;
 		const cs = s.ledger
-			? { summary: cst >= 0, nav: false }
+			? cst >= 0
+				? { summary: cst === 0, s5: cst === 5, nav: cst >= 0 && cst < 6 }
+				: { summary: false, nav: false }
 			: {
 					s0: cst === 0,
 					s1: cst === 1,
 					s2: cst === 2,
 					s3: cst === 3,
 					s4: cst === 4,
-					done: cst === 5,
-					nav: cst >= 0 && cst < 5
+					s5: cst === 5,
+					done: cst === 6,
+					nav: cst >= 0 && cst < 6,
+					summary: false
 				};
+		const devemRes = s.ledger ? resumoDevem(s.ledger.vinculos) : null;
+		const devemKpis = devemRes
+			? [
+					{ l: 'Total emprestado', v: c2(devemRes.emprestado) },
+					{ l: 'A receber', v: c2(devemRes.aReceber) },
+					{ l: 'Já voltou', v: c2(devemRes.voltou) },
+					{
+						l: 'Taxa de retorno',
+						v: Math.round(devemRes.taxa * 100) + '%'
+					}
+				]
+			: [];
+		const pessoaDet =
+			s.ledger && s.pessoaId ? s.ledger.pessoas.find((p) => p.id === s.pessoaId) : null;
+		const pessoasPorCirculo = (() => {
+			if (!s.ledger) return [];
+			const m = new Map();
+			for (const p of s.ledger.pessoas) {
+				const c = p.circulo || 'Sem círculo';
+				if (!m.has(c)) m.set(c, []);
+				m.get(c).push(p);
+			}
+			return [...m.entries()].map(([c, ps]) => ({
+				circulo: c,
+				pessoas: ps.map((p) => ({
+					n: p.apelido || p.nome,
+					r: p.relacao || '—',
+					go: () => this.openPessoa(p.id)
+				}))
+			}));
+		})();
+		const casaPins = (s.ledger?.lugares ?? []).map((l, i) => ({
+			x: 200 + (i % 3) * 220,
+			y: 200 + Math.floor(i / 3) * 120,
+			label: l.nome,
+			go: () => this.nav('mapa')
+		}));
+		const emps = (s.ledger?.contratos ?? []).map((c) => {
+			const p = s.ledger.pessoas.find((x) => x.id === c.pessoa_id);
+			return {
+				n: p?.nome ?? c.pessoa_id,
+				rel: p?.relacao ?? '',
+				reg: c.regime || '—',
+				sal: c.salario_centavos != null ? c2(c.salario_centavos / 100) : '—',
+				mes: '—',
+				ano: '—',
+				banco: c.banco_pagador || '—',
+				go: () => p && this.openPessoa(p.id)
+			};
+		});
 		const realizadoAno = anoSerie
 			? anoSerie.filter((r) => !r.projetado).reduce((a, r) => a + totalResumo(r), 0)
 			: 0;
@@ -1893,8 +2092,9 @@ export class Book {
 			paceNote,
 			extraNote,
 			projectionNote,
-			real: !!s.real,
-			sample: !s.real,
+			real: !!s.ledger,
+			sample: !s.ledger && !s.ledgerError,
+			ledgerError: !!s.ledgerError,
 			gap: !!s.real && route === 'projetos',
 			gapTitle: this.title(route),
 			who: s.ledger ? 'Daniel' : 'Rafael Andrade',
@@ -1905,7 +2105,7 @@ export class Book {
 							.map((p) => p.nome + (p.relacao ? ' (' + p.relacao + ')' : ''))
 							.join(', ')
 					: PESSOAS
-				: 'Rafael, Mariana, Helena (filha)',
+				: 'Rafael, Mariana, Olivia (filha)',
 			accounts: s.ledger
 				? s.ledger.contas.length
 					? s.ledger.contas
@@ -1927,6 +2127,7 @@ export class Book {
 			pendSummary,
 			pendEmpty: s.ledger ? !pendN : !s.pend.length,
 			goPend: () => this.nav('pendencias'),
+			goPessoas: () => this.nav('pessoas'),
 			goCompras: () => this.nav('compras'),
 			goImport: () => this.nav('importar'),
 			newPurchase: () => this.toast('Nova compra manual: formulário a desenhar na próxima rodada'),
@@ -1979,6 +2180,47 @@ export class Book {
 			gridC:
 				'display:grid;grid-template-columns:28px 56px minmax(0,1.6fr) minmax(0,1.3fr) 54px 96px 96px 90px;gap:10px;align-items:center;',
 			mnames: this.MN,
+			visaoTitle: s.ledger ? 'Visão geral de ' + s.ledger.year : 'Visão geral de 2026',
+			visaoNote:
+				'A planilha do ano numa só página: saldo, entradas, saídas e cada categoria, mês a mês. Meses futuros são projeção. Clique numa categoria para ver as compras.',
+			visaoRows,
+			casaCadastroFalta: 'O cadastro desta área ainda não existe no livro.',
+			pessoasPorCirculo,
+			pessoaDet,
+			devemKpis,
+			casaPins,
+			casaEmpty: !s.ledger?.lugares?.length,
+			emps,
+			goDevem: () => this.nav('devem'),
+			goMapa: () => this.nav('mapa'),
+			fluxoVinculosNota:
+				'Fora do custo de vida: empréstimos e ajudas entre pessoas. Veja em Quem deve a quem.',
+			hojeDevemAReceber: devemRes ? c2(devemRes.aReceber) : '—',
+			hojeDevemVoce: devemRes ? c2(0) : '—',
+			modalLm: !!s.modalLm,
+			modalAm: s.modalAm,
+			novaPessoaNome: s.novaPessoaNome,
+			wzStep: s.wzStep,
+			openModalAm: () => this.set({ modalAm: true }),
+			closeModalAm: () => this.set({ modalAm: false }),
+			openModalLm: (compraId) => this.set({ modalLm: { compraId } }),
+			closeModalLm: () => this.set({ modalLm: null }),
+			startCasaWizard: () => this.set({ wzStep: 0, route: 'mapa' }),
+			wzNext: () => this.set({ wzStep: Math.min(2, s.wzStep + 1) }),
+			wzDone: async () => {
+				this.set({ wzStep: -1 });
+				this.toast('Casa montada no livro');
+			},
+			setNovaPessoaNome: (e) => this.set({ novaPessoaNome: e.target.value }),
+			saveNovaPessoa: () =>
+				this.gravarPessoa({
+					id: 'p-' + Date.now(),
+					nome: s.novaPessoaNome || 'Nova pessoa',
+					relacao: '',
+					circulo: 'Família'
+				}),
+			metasVinculoNota:
+				'Valores a receber de empréstimos só entram no bloco Futuro quando voltarem ao livro.',
 			tl,
 			tlH: 96,
 			periods,
@@ -2073,11 +2315,11 @@ export class Book {
 			closeCmd: () => this.set({ cmd: false }),
 			cmdList,
 			closeOpen: cst >= 0,
-			closeW: ((cst + 1) / 6) * 100 + '%',
-			closeStepLabel: cst < 5 ? 'Passo ' + (cst + 1) + ' de 5' : 'Concluído',
+			closeW: ((cst + 1) / 7) * 100 + '%',
+			closeStepLabel: cst < 6 ? 'Passo ' + (cst + 1) + ' de 6' : 'Concluído',
 			closeX: () => this.set({ closeStep: -1 }),
 			cs,
-			nextLabel: cst === 4 ? 'Fechar o mês' : 'Continuar',
+			nextLabel: cst === 5 ? 'Fechar o mês' : 'Continuar',
 			closeNext: () => this.set({ closeStep: cst + 1 }),
 			closePrev: () => this.set({ closeStep: Math.max(0, cst - 1) }),
 			importLabel: s.importDone ? '✓ Importado' : 'Importar o que falta',

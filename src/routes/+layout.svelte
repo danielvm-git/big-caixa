@@ -47,11 +47,18 @@
 		const route =
 			{
 				'/hoje': 'hoje',
+				'/visao': 'visao',
 				'/fluxo': 'fluxo',
 				'/mes': 'mes',
 				'/compras': 'compras',
 				'/viagens': 'viagens',
 				'/projetos': 'projetos',
+				'/mapa': 'mapa',
+				'/pessoas': 'pessoas',
+				'/pessoa': 'pessoa',
+				'/empregados': 'empregados',
+				'/custo': 'custo',
+				'/devem': 'devem',
 				'/ano': 'ano',
 				'/metas': 'metas',
 				'/importar': 'importar',

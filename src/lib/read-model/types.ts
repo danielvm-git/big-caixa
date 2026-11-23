@@ -19,6 +19,7 @@ export type CompraDoc = {
 	conta_id?: string;
 	categoria_id: string | null;
 	escopo: string;
+	pessoa_id?: string | null;
 };
 
 export type SankeyDoc = {
@@ -96,7 +97,45 @@ export type PendenciasDoc = {
 	ano: string;
 };
 
-export type PessoaDoc = { id: string; nome: string; relacao: string };
+export type PessoaDoc = {
+	id: string;
+	nome: string;
+	relacao: string;
+	apelido?: string;
+	circulo?: string;
+	aniversario?: string;
+	visibilidade?: string;
+	aliases?: string[];
+};
+
+export type LugarDoc = { id: string; nome: string; tipo: string };
+
+export type VinculoDoc = {
+	id: string;
+	tipo: string;
+	de_pessoa_id: string;
+	para_pessoa_id: string;
+	compra_id: string | null;
+	valor_centavos: number;
+	parcelas: number | null;
+	juros_pct: number | null;
+	prazo: string | null;
+	status: string;
+	nota: string;
+};
+
+export type ContratoDoc = {
+	id: string;
+	pessoa_id: string;
+	regime: string;
+	salario_centavos: number | null;
+	inss_patronal_pct: number | null;
+	fgts_pct: number | null;
+	vt_centavos: number | null;
+	banco_pagador: string;
+	inicio: string;
+	ativo: number;
+};
 export type ContaDoc = {
 	id: string;
 	nome: string;

@@ -1,6 +1,6 @@
 # big-caixa
 
-Web app **big-caixa**: SvelteKit estático hospedado no [BigBase](https://bigbase.click). Os extratos, faturas e o `livro-caixa.sqlite` ficam em **My_Finances**, fora deste repositório.
+Web app **big-caixa**: SvelteKit estático hospedado no [BigBase](https://bigbase.click). O livro autoritativo fica no **Postgres do Neon** (schema `caixa`); a leitura passa pela Function `leitura` no branch **production**. Staging e produção no site usam a mesma `VITE_CAIXA_URL`; os branches `production` e `staging` no Neon recebem a mesma carga com `node scripts/copy-sqlite-to-neon.mjs production staging` (última migração do SQLite legado).
 
 ## Desenvolvimento
 
@@ -25,12 +25,12 @@ npm run preflight
 bash scripts/setup.sh
 ```
 
-## Sync (máquina local)
+## Dados (Neon)
 
 ```bash
-SQLITE_PATH=~/Documents/My_Finances/livro-caixa.sqlite \
-BIGBASE_API_KEY=bb_... \
-npm run sync
+npm run caixa:migrate
+# migração legada SQLite → Neon (uma vez, se ainda precisar):
+node scripts/copy-sqlite-to-neon.mjs production staging
 ```
 
 ## Deploy (GitHub Actions)

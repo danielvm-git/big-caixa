@@ -1,5 +1,6 @@
-/** Registro de escrita: append em fato_evento via API ou log local. */
+/** Registro de escrita: API Neon ou log local em dev sem URL. */
 import { log } from '$lib/log';
+import { caixaWrite } from './caixa';
 
 export function recordFatoEvento(payload: {
 	tipo: string;
@@ -9,3 +10,5 @@ export function recordFatoEvento(payload: {
 }): void {
 	log('info', 'fato_evento', { outcome: payload.tipo, count: 1 });
 }
+
+export { caixaWrite };

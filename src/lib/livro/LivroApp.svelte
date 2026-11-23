@@ -1,5 +1,6 @@
 <script lang="ts">
 	// @ts-nocheck — markup fiel ao protótipo, tipos dinâmicos
+	import Casa from '$lib/livro/Casa.svelte';
 	import { book } from '$lib/livro/book.svelte';
 	let v = $derived(book.view());
 </script>
@@ -231,6 +232,13 @@
 							{/if}
 						</div>
 					</div>
+					{#if v.real}<div style="{v.card}display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+							<b>Quem deve a quem</b>
+							<span style="font-size:13px;color:var(--mut)">A receber:</span>
+							<b style={v.bl}>{v.hojeDevemAReceber}</b>
+							<button type="button" onclick={v.goDevem} style={v.btn}>Ver todas as contas →</button
+							>
+						</div>{/if}
 					<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">
 						{#each v.scopes as sc}<div style={v.card}>
 								<div style="font-size:13px;color:var(--mut)">{sc.n}</div>
@@ -307,8 +315,68 @@
 				</div>
 			{/if}
 
+			{#if v.s.visao}
+				<div style="display:flex;flex-direction:column;gap:14px;animation:up .3s">
+					<div>
+						<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">{v.visaoTitle}</h1>
+						<div style="color:var(--mut);font-size:14px">{v.visaoNote}</div>
+					</div>
+					{#if v.ledgerError}
+						<div style={v.card}>Não foi possível ler o livro. Confira a sessão e a ligação ao Postgres.</div>
+					{:else if !v.visaoRows.length}
+						<div style={v.card}>Sem dados de ano no livro.</div>
+					{:else}
+						<div style="{v.card}padding:0;overflow:auto">
+							<div style="min-width:1240px">
+								<div
+									style="display:grid;grid-template-columns:210px repeat(12,minmax(72px,1fr)) 92px 104px;gap:6px;padding:10px 14px;font-size:11px;color:var(--mut);text-transform:uppercase;position:sticky;top:0;background:var(--sf)"
+								>
+									<span></span>
+									{#each v.mnames as mn}<span style="text-align:right">{mn}</span>{/each}
+									<span style="text-align:right">Média</span>
+									<span style="text-align:right">Total</span>
+								</div>
+								{#each v.visaoRows as r}
+									{#if r.go}
+										<button
+											type="button"
+											onclick={r.go}
+											style="display:grid;grid-template-columns:210px repeat(12,minmax(72px,1fr)) 92px 104px;gap:6px;padding:7px 14px;border-top:1px solid var(--ln);font-size:{r.fs};font-weight:{r.fw};background:{r.bg};font-variant-numeric:tabular-nums;width:100%;text-align:left;border-left:0;border-right:0;cursor:pointer;color:var(--ink)"
+										>
+											<span style="padding-left:{r.pl}">{r.l}</span>
+											{#each r.v as c}<span style="text-align:right;color:{c.mut
+													? 'var(--mut)'
+													: 'var(--ink)'};{v.bl}">{c.t}</span>{/each}
+											<span style="text-align:right;color:var(--mut);{v.bl}">{r.m}</span>
+											<span style="text-align:right;{v.bl}">{r.t}</span>
+										</button>
+									{:else}
+										<div
+											style="display:grid;grid-template-columns:210px repeat(12,minmax(72px,1fr)) 92px 104px;gap:6px;padding:7px 14px;border-top:1px solid var(--ln);font-size:{r.fs};font-weight:{r.fw};background:{r.bg};font-variant-numeric:tabular-nums"
+										>
+											<span style="padding-left:{r.pl}">{r.l}</span>
+											{#each r.v as c}<span style="text-align:right;color:{c.mut
+													? 'var(--mut)'
+													: 'var(--ink)'};{v.bl}">{c.t}</span>{/each}
+											<span style="text-align:right;color:var(--mut);{v.bl}">{r.m}</span>
+											<span style="text-align:right;{v.bl}">{r.t}</span>
+										</div>
+									{/if}
+								{/each}
+							</div>
+						</div>
+					{/if}
+				</div>
+			{/if}
+
 			{#if v.s.fluxo}
 				<div style="max-width:1180px;display:flex;flex-direction:column;gap:14px;animation:up .3s">
+					<div style="font-size:13px;color:var(--mut)">
+						{v.fluxoVinculosNota}
+						<button type="button" onclick={v.goDevem} style="border:0;background:0;color:var(--ink);cursor:pointer;text-decoration:underline"
+							>Quem deve a quem</button
+						>
+					</div>
 					<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
 						<h1 style="font:600 28px 'Source Serif 4',serif;margin:0;flex:1">
 							Para onde foi o dinheiro
@@ -456,7 +524,7 @@
 									<div style="flex:1;background:var(--mut)"></div>
 								</div>
 								<span style="color:var(--mut);font-size:12px">
-									{#if v.real}{v.escopoShare}{:else}Casa 50% · Rafael 20% · Mariana 20% · Helena 10%{/if}
+									{#if v.real}{v.escopoShare}{:else}Casa 50% · Rafael 20% · Mariana 20% · Olivia 10%{/if}
 								</span>
 							</div>
 							<button onclick={v.cd.go} style={v.btnP}>Ver as compras de {v.cd.n} →</button>
@@ -540,6 +608,9 @@
 													style="font-size:12px;color:var(--mut)"
 												>
 													{r.titulo}
+													{#if r.hasP}
+														· <span style="color:var(--plum)">{r.pessoa}</span>
+													{/if}
 													{r.ext}
 												</span>
 											</span>
@@ -816,6 +887,94 @@
 				</div>
 			{/if}
 
+			{#if v.s.mapa}
+				<div style="max-width:1240px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
+					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Nossa casa</h1>
+					<div style={v.card}>
+						<Casa pins={v.casaPins} empty={v.casaEmpty} onstartWizard={v.startCasaWizard} />
+					</div>
+					{#if v.wzStep >= 0}
+						<div style="{v.card}display:flex;flex-direction:column;gap:10px">
+							<b>Passo {v.wzStep + 1} de 3</b>
+							<p style="margin:0;color:var(--mut);font-size:14px">
+								{v.wzStep === 0
+									? 'Quem mora na casa'
+									: v.wzStep === 1
+										? 'Lugares da rotina'
+										: 'Como aparecem no extrato'}
+							</p>
+							<button type="button" onclick={v.wzStep < 2 ? v.wzNext : v.wzDone} style={v.btnP}
+								>{v.wzStep < 2 ? 'Continuar' : 'Concluir'}</button
+							>
+						</div>
+					{/if}
+				</div>
+			{/if}
+
+			{#if v.s.pessoas}
+				<div style="max-width:1100px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
+					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Pessoas</h1>
+					<button type="button" onclick={v.openModalAm} style={v.btn}>Adicionar pessoa</button>
+					{#each v.pessoasPorCirculo as g}
+						<div style={v.card}>
+							<div style="font:600 17px 'Source Serif 4',serif;margin-bottom:8px">{g.circulo}</div>
+							{#each g.pessoas as p}<button
+									type="button"
+									onclick={p.go}
+									style="{v.rowBtn}border-bottom:1px solid var(--ln)"
+								>
+									<span style="flex:1;text-align:left;font-weight:600">{p.n}</span>
+									<span style="color:var(--mut)">{p.r}</span>
+								</button>{/each}
+						</div>
+					{/each}
+				</div>
+			{/if}
+
+			{#if v.s.pessoa && v.pessoaDet}
+				<div style="max-width:900px;display:flex;flex-direction:column;gap:14px;animation:up .3s">
+					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">{v.pessoaDet.apelido || v.pessoaDet.nome}</h1>
+					<div style={v.card}>
+						<div style="font-size:14px;color:var(--mut)">{v.pessoaDet.relacao}</div>
+						{#if v.pessoaDet.aliases?.length}
+							<div style="margin-top:8px;font-size:13px">
+								Aliases: {v.pessoaDet.aliases.join(', ')}
+							</div>
+						{/if}
+					</div>
+				</div>
+			{/if}
+
+			{#if v.s.devem}
+				<div style="max-width:1100px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
+					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Quem deve a quem</h1>
+					<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">
+						{#each v.devemKpis as k}<div style={v.card}>
+								<div style="font-size:12px;color:var(--mut)">{k.l}</div>
+								<div style="font:600 22px 'Source Serif 4',serif;{v.bl}">{k.v}</div>
+							</div>{/each}
+					</div>
+				</div>
+			{/if}
+
+			{#if v.s.empregados}
+				<div style="max-width:1100px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
+					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Empregados</h1>
+					{#if v.emps.length}{#each v.emps as e}<div style={v.card}>
+								<div style="font:600 18px 'Source Serif 4',serif">{e.n}</div>
+								<div style="font-size:13px;color:var(--mut)">{e.rel} · {e.reg}</div>
+								<div style="font-size:13px;margin-top:8px">Salário: <b style={v.bl}>{e.sal}</b></div>
+							</div>{/each}{:else}<div style={v.card}>{v.casaCadastroFalta}</div>{/if}
+				</div>
+			{/if}
+
+			{#if v.s.custo}
+				<div style="max-width:1100px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
+					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Custo e pagamentos</h1>
+					<div style={v.card}>{v.casaCadastroFalta}</div>
+				</div>
+			{/if}
+
 			{#if v.s.ano}
 				<div style="max-width:1100px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
 					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">O ano e o que vem a seguir</h1>
@@ -875,6 +1034,7 @@
 			{#if v.s.metas}
 				<div style="max-width:1100px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
 					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">50/30/20 e metas</h1>
+					<p style="margin:0;font-size:13px;color:var(--mut)">{v.metasVinculoNota}</p>
 					<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px">
 						<div style="{v.card}display:flex;gap:18px;align-items:center">
 							<div
@@ -1133,7 +1293,9 @@
 					Parcelas
 				</span><span>{v.pn.parc} · pago {v.pn.pago}</span><span style="color:var(--mut)">
 					Origem
-				</span><span>{v.pn.orig}</span>
+				</span><span>{v.pn.orig}</span><span style="color:var(--mut)">Para quem</span><span
+					>{v.pn.paraQuem}</span
+				>
 			</div>
 			<div style="background:var(--sf2);border-radius:10px;padding:10px 12px;font-size:13px">
 				<i class="ph ph-envelope-simple"></i> <b>Nota do e-mail</b><br /><span
@@ -1150,6 +1312,9 @@
 					</button>{/if}<button onclick={v.markExtra} style={v.btn}>
 					Marcar como extraordinária
 				</button>
+				{#if v.pn.openLm}<button onclick={v.pn.openLm} style={v.btnP}>
+						Isto é empréstimo / ajuda / racha
+					</button>{/if}
 			</div>
 		</aside>
 	{/if}
@@ -1268,9 +1433,17 @@
 								<input type="checkbox" checked style="accent-color:var(--ink)" /> Leroy Merlin, torneira
 								e tinta → Reforma da cozinha
 							</label><label>
-								<input type="checkbox" style="accent-color:var(--ink)" /> Cinemark → Aniversário da Helena
+								<input type="checkbox" style="accent-color:var(--ink)" /> Cinemark → Aniversário da Olivia
 							</label>
 						</div>{/if}
+					{#if v.cs.s5}<h1 style="font:600 32px 'Source Serif 4',serif;margin:0">
+							Rever empréstimos e trocas do mês
+						</h1>
+						<p style="color:var(--mut);font-size:14px">
+							Confira vínculos abertos em <button type="button" onclick={v.goDevem} style={v.btn}
+								>Quem deve a quem</button
+							>.
+						</p>{/if}
 					{#if v.sample && v.cs.s4}<h1 style="font:600 32px 'Source Serif 4',serif;margin:0">
 							Como foi outubro?
 						</h1>
@@ -1306,6 +1479,24 @@
 								{v.nextLabel}
 							</button>
 						</div>{/if}
+				</div>
+			</div>
+		</div>{/if}
+
+	{#if v.modalAm}<div
+			style="position:fixed;inset:0;background:rgba(10,12,24,.45);display:flex;align-items:center;justify-content:center;z-index:50"
+		>
+			<div style="{v.card}width:min(400px,92vw);display:flex;flex-direction:column;gap:12px">
+				<b>Adicionar pessoa</b>
+				<input
+					placeholder="Nome"
+					value={v.novaPessoaNome}
+					oninput={v.setNovaPessoaNome}
+					style="border-radius:8px;border:1px solid var(--ln);padding:8px"
+				/>
+				<div style="display:flex;gap:8px">
+					<button type="button" onclick={v.closeModalAm} style={v.btn}>Cancelar</button>
+					<button type="button" onclick={v.saveNovaPessoa} style={v.btnP}>Colocar no mapa</button>
 				</div>
 			</div>
 		</div>{/if}

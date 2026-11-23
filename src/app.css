@@ -17,6 +17,14 @@
 	--sky: #cfe3ee;
 	--terraBg: #f8e3d9;
 	--mossBg: #dfecd5;
+	--leaf: #8fb67a;
+	--plum: #6a3d6b;
+	--sand: #ecd8a8;
+	--wall: #fbf3e1;
+	--roomA: #cfe3ee;
+	--roomB: #dfecd5;
+	--roomC: #f8e3d9;
+	--roomD: #f0e7d1;
 	font-family: Inter, system-ui, sans-serif;
 	color: var(--ink);
 	background: var(--bg);
@@ -39,6 +47,14 @@
 	--sky: #232842;
 	--terraBg: #3a2a30;
 	--mossBg: #243a33;
+	--leaf: #5a8f52;
+	--plum: #9a6a9c;
+	--sand: #4a4230;
+	--wall: #2a2838;
+	--roomA: #2d3a52;
+	--roomB: #243a33;
+	--roomC: #3a2a30;
+	--roomD: #272b44;
 }
 
 * {

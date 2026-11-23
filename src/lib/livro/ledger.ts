@@ -1,33 +1,40 @@
 import {
 	loadBlocos,
 	loadCompras,
+	loadContratos,
 	loadContas,
 	loadFaturasPendentes,
 	loadFerias,
 	loadImportacoes,
 	loadMes,
 	loadPendencias,
+	loadLugares,
 	loadPessoas,
 	loadReferencia,
+	loadVinculos,
 	loadRegras,
 	loadSankey,
 	loadViagens
 } from '$lib/read-model/client';
 import { getSession } from '$lib/auth/session';
+import { categoria } from './catalog';
 import type {
 	BlocoDoc,
 	CompraDoc,
+	ContratoDoc,
 	ContaDoc,
 	FaturaPendenteDoc,
 	FeriasDoc,
 	ImportacaoDoc,
+	LugarDoc,
 	MesDoc,
 	PendenciasDoc,
 	PessoaDoc,
 	ReferenciaDoc,
 	RegraDoc,
 	SankeyDoc,
-	ViagemDoc
+	ViagemDoc,
+	VinculoDoc
 } from '$lib/read-model/types';
 
 export type Ledger = {
@@ -45,6 +52,9 @@ export type Ledger = {
 	faturasPendentes: FaturaPendenteDoc[];
 	pendencias: PendenciasDoc | null;
 	pessoas: PessoaDoc[];
+	lugares: LugarDoc[];
+	vinculos: VinculoDoc[];
+	contratos: ContratoDoc[];
 	contas: ContaDoc[];
 	blocos: BlocoDoc[];
 };
@@ -116,6 +126,115 @@ export function baselineMes(ledger: Ledger): MesResumo {
 		extraordinario: 0,
 		projetado: true
 	};
+}
+
+export type VisaoCelula = { v: number; projetado: boolean };
+
+export type VisaoLinha = {
+	label: string;
+	cells: VisaoCelula[];
+	media: number;
+	total: number;
+	kind: 'summary' | 'category';
+	categoriaId?: string;
+};
+
+function entradaMes(ledger: Ledger, mes: string, ano: number, mesAtual: string): VisaoCelula {
+	const links = ledger.sankey[mes] ?? [];
+	const direto = links.filter((l) => l.nivel === 1).reduce((a, l) => a + l.valor, 0);
+	if (mes <= mesAtual && direto > 0) return { v: direto, projetado: false };
+	if (mes <= mesAtual) return { v: 0, projetado: false };
+	const vals = Array.from({ length: 12 }, (_, i) => {
+		const k = chave(ano, i + 1);
+		if (k > mesAtual) return 0;
+		const lk = ledger.sankey[k] ?? [];
+		return lk.filter((l) => l.nivel === 1).reduce((a, l) => a + l.valor, 0);
+	}).filter((x) => x > 0);
+	return { v: medianaDe(vals.length ? vals : [0]), projetado: true };
+}
+
+function saidaMes(ledger: Ledger, mes: string, ano: number, mesAtual: string): VisaoCelula {
+	const rows = ledger.months[mes] ?? [];
+	if (rows.length && mes <= mesAtual) return { v: soma(rows), projetado: false };
+	if (mes > mesAtual) {
+		const proj = carregarAno(ledger, ano).find((r) => r.mes === mes);
+		return { v: proj ? totalResumo(proj) : 0, projetado: true };
+	}
+	return { v: 0, projetado: false };
+}
+
+function categoriaMes(
+	ledger: Ledger,
+	mes: string,
+	catId: string,
+	ano: number,
+	mesAtual: string,
+	medianaCat: number
+): VisaoCelula {
+	const rows = (ledger.months[mes] ?? []).filter((r) => r.categoria_id === catId);
+	if (rows.length && mes <= mesAtual) return { v: soma(rows), projetado: false };
+	if (mes > mesAtual) return { v: medianaCat, projetado: medianaCat > 0 };
+	return { v: 0, projetado: false };
+}
+
+function statsLinha(cells: VisaoCelula[]): { media: number; total: number } {
+	const vals = cells.map((c) => c.v);
+	const total = vals.reduce((a, v) => a + v, 0);
+	const fechados = cells.filter((c) => !c.projetado && c.v !== 0);
+	const media =
+		fechados.length > 0
+			? fechados.reduce((a, c) => a + c.v, 0) / fechados.length
+			: vals.length
+				? total / vals.length
+				: 0;
+	return { media, total };
+}
+
+/** Planilha 12×categorias + entradas, saídas e saldo. */
+export function visaoGeralAno(ledger: Ledger, ano: number): VisaoLinha[] {
+	const mesAtual = ledger.mesAtual;
+	const keys = Array.from({ length: 12 }, (_, i) => chave(ano, i + 1));
+	const catIds = new Set<string>();
+	for (const key of keys) {
+		for (const row of ledger.months[key] ?? []) {
+			if (row.categoria_id) catIds.add(row.categoria_id);
+		}
+	}
+	const catList = [...catIds].sort();
+	const medianaPorCat = new Map<string, number>();
+	for (const id of catList) {
+		const vals = keys
+			.filter((k) => k <= mesAtual)
+			.map((k) => soma((ledger.months[k] ?? []).filter((r) => r.categoria_id === id)))
+			.filter((v) => v > 0);
+		medianaPorCat.set(id, medianaDe(vals));
+	}
+
+	const entradas = keys.map((k) => entradaMes(ledger, k, ano, mesAtual));
+	const saidas = keys.map((k) => saidaMes(ledger, k, ano, mesAtual));
+	const saldos = keys.map((k, i) => ({
+		v: entradas[i].v - saidas[i].v,
+		projetado: entradas[i].projetado || saidas[i].projetado
+	}));
+
+	const rows: VisaoLinha[] = [
+		{ label: 'Saldo', cells: saldos, ...statsLinha(saldos), kind: 'summary' },
+		{ label: 'Entradas', cells: entradas, ...statsLinha(entradas), kind: 'summary' },
+		{ label: 'Saídas', cells: saidas, ...statsLinha(saidas), kind: 'summary' }
+	];
+	for (const id of catList) {
+		const cells = keys.map((k) =>
+			categoriaMes(ledger, k, id, ano, mesAtual, medianaPorCat.get(id) ?? 0)
+		);
+		rows.push({
+			label: categoria(id).nome || id,
+			cells,
+			...statsLinha(cells),
+			kind: 'category',
+			categoriaId: id
+		});
+	}
+	return rows;
 }
 
 export function carregarAno(ledger: Ledger, ano: number): MesResumo[] {
@@ -442,6 +561,9 @@ export async function fetchLedger(): Promise<Ledger | null> {
 		faturasPendentes,
 		pendencias,
 		pessoas,
+		lugares,
+		vinculos,
+		contratos,
 		contas,
 		blocos,
 		refAtual
@@ -454,6 +576,9 @@ export async function fetchLedger(): Promise<Ledger | null> {
 		loadFaturasPendentes(),
 		loadPendencias(String(year)),
 		loadPessoas(),
+		loadLugares(),
+		loadVinculos(),
+		loadContratos(),
 		loadContas(),
 		loadBlocos(),
 		loadReferencia(mesAtual)
@@ -474,9 +599,33 @@ export async function fetchLedger(): Promise<Ledger | null> {
 		faturasPendentes,
 		pendencias,
 		pessoas,
+		lugares,
+		vinculos,
+		contratos,
 		contas,
 		blocos
 	};
+}
+
+export function resumoDevem(vinculos: VinculoDoc[]): {
+	emprestado: number;
+	aReceber: number;
+	voltou: number;
+	taxa: number;
+} {
+	let emprestado = 0;
+	let aReceber = 0;
+	let voltou = 0;
+	for (const v of vinculos) {
+		const val = (v.valor_centavos || 0) / 100;
+		if (v.status === 'quitado') voltou += val;
+		if (v.tipo === 'emprestimo' || v.tipo === 'ajuda') {
+			emprestado += val;
+			if (v.status !== 'quitado') aReceber += val;
+		}
+	}
+	const taxa = emprestado > 0 ? voltou / emprestado : 0;
+	return { emprestado, aReceber, voltou, taxa };
 }
 
 export async function referenciaDoMes(ledger: Ledger, periodo: string): Promise<ReferenciaDoc[]> {

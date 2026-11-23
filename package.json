@@ -15,7 +15,7 @@
 		"test": "vitest run",
 		"test:e2e": "playwright test",
 		"preflight": "bash scripts/preflight.sh",
-		"sync": "tsx scripts/sync-read-models.ts"
+		"caixa:migrate": "node scripts/apply-caixa-migration.mjs"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",

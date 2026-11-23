@@ -1,6 +1,6 @@
 # big-caixa
 
-SvelteKit estático, dados via collections BigBase, depósito em `~/Documents/My_Finances/livro-caixa.sqlite`.
+SvelteKit estático; leitura/escrita via Neon Functions no schema `caixa` (Postgres). O SQLite em My_Finances é legado — só `scripts/copy-sqlite-to-neon.mjs` para migração pontual.
 
 ## Observability
 

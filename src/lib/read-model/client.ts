@@ -2,18 +2,22 @@ import { fixtureCompras, fixtureMes, fixtureSankey } from './fixtures';
 import type {
 	BlocoDoc,
 	CompraDoc,
+	ContratoDoc,
 	ContaDoc,
 	FaturaPendenteDoc,
 	FeriasDoc,
 	ImportacaoDoc,
+	LugarDoc,
 	MesDoc,
 	PendenciasDoc,
 	PessoaDoc,
 	ReferenciaDoc,
 	RegraDoc,
 	SankeyDoc,
-	ViagemDoc
+	ViagemDoc,
+	VinculoDoc
 } from './types';
+import { AUTH_MODE } from '$lib/auth/api';
 import { getSession } from '$lib/auth/session';
 
 type Colecao =
@@ -28,6 +32,9 @@ type Colecao =
 	| 'faturas'
 	| 'pendencias'
 	| 'pessoas'
+	| 'lugares'
+	| 'vinculos'
+	| 'contratos'
 	| 'contas'
 	| 'blocos';
 
@@ -37,8 +44,9 @@ function caixaBase(): string {
 }
 
 function useFixtures(): boolean {
+	if (AUTH_MODE === 'mock') return true;
 	const token = getSession()?.token;
-	return !token || token === 'mock-token';
+	return token === 'mock-token';
 }
 
 async function read<T>(colecao: Colecao, periodo?: string): Promise<T[]> {
@@ -113,7 +121,28 @@ export async function loadPendencias(ano: string): Promise<PendenciasDoc | null>
 
 export async function loadPessoas(): Promise<PessoaDoc[]> {
 	if (useFixtures()) return [];
-	return read<PessoaDoc>('pessoas');
+	const rows = await read<PessoaDoc & { aliases?: unknown }>('pessoas');
+	return rows.map((p) => ({
+		...p,
+		aliases: Array.isArray(p.aliases)
+			? p.aliases.filter((x): x is string => typeof x === 'string')
+			: []
+	}));
+}
+
+export async function loadLugares(): Promise<LugarDoc[]> {
+	if (useFixtures()) return [];
+	return read<LugarDoc>('lugares');
+}
+
+export async function loadVinculos(): Promise<VinculoDoc[]> {
+	if (useFixtures()) return [];
+	return read<VinculoDoc>('vinculos');
+}
+
+export async function loadContratos(): Promise<ContratoDoc[]> {
+	if (useFixtures()) return [];
+	return read<ContratoDoc>('contratos');
 }
 
 export async function loadContas(): Promise<ContaDoc[]> {

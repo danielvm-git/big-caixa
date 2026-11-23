@@ -1,38 +1,13 @@
 #!/usr/bin/env bash
+# Setup idempotente: deps npm + migração v2 no Neon (branches production e staging).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SQLITE_PATH="${SQLITE_PATH:-$HOME/Documents/My_Finances/livro-caixa.sqlite}"
 cd "$ROOT"
-if [ -d "$ROOT/.githooks" ]; then
-	bash "$ROOT/scripts/setup-git-hooks.sh"
-fi
-mkdir -p logs
-if [ -f package-lock.json ]; then
-  npm ci
-fi
-if [ -f "$SQLITE_PATH" ]; then
-  sqlite3 "$SQLITE_PATH" "
-    CREATE TABLE IF NOT EXISTS fato_evento (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      ocorrido_em TEXT NOT NULL DEFAULT (datetime('now')),
-      tipo TEXT NOT NULL,
-      entidade_id TEXT,
-      categoria_anterior TEXT,
-      categoria_nova TEXT
-    );
-    CREATE TABLE IF NOT EXISTS app_event (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      ocorrido_em TEXT NOT NULL DEFAULT (datetime('now')),
-      tipo TEXT NOT NULL,
-      rota TEXT,
-      mes TEXT,
-      escopo TEXT,
-      duracao_ms INTEGER,
-      resultado TEXT
-    );
-  "
-  echo "setup: tabelas de evento ok em $SQLITE_PATH"
+npm ci
+echo "setup: npm ok"
+if command -v neon >/dev/null 2>&1; then
+	node scripts/apply-caixa-migration.mjs production staging || true
 else
-  echo "setup: SQLITE_PATH ausente ($SQLITE_PATH) — pulando DDL"
+	echo "setup: neon CLI ausente — pule migração ou instale neonctl"
 fi
 echo "setup: ok"

@@ -37,11 +37,7 @@ SITE_URL=https://big-caixa.bigbase.click bash scripts/health.sh
 curl -s https://big-caixa.bigbase.click/health.json   # version e sha do push
 ```
 
-7. Popular as collections (`mes`, `sankey`, `compra`, …) a partir do SQLite:
-
-   ```bash
-   SQLITE_PATH=~/Documents/My_Finances/livro-caixa.sqlite BIGBASE_API_KEY=bb_... npm run sync
-   ```
+7. Dados do livro: Postgres Neon (`npm run caixa:migrate`). Carga legada opcional: `node scripts/copy-sqlite-to-neon.mjs production staging`. Deploy das functions `leitura` e `escrita` no branch **production**; o site usa `VITE_CAIXA_URL` e `VITE_CAIXA_ESCRITA_URL` no `bigbase.toml`.
 
 ## Verificação local (sem site)
 
