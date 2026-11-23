@@ -57,6 +57,7 @@ async function userId(request) {
 }
 
 const PERIODO = /^\d{4}-\d{2}$/;
+const ANO = /^\d{4}$/;
 
 async function rows(colecao, periodo) {
 	if (colecao === 'mes') {
@@ -74,7 +75,7 @@ async function rows(colecao, periodo) {
 	if (colecao === 'sankey') {
 		if (!PERIODO.test(periodo ?? '')) return [];
 		const q = await pool.query(
-			`SELECT periodo, nivel, origem, destino, valor::float8 AS valor
+			`SELECT periodo, nivel, origem, destino, valor::float8 AS valor, coalesce(tipo, '') AS tipo
 			 FROM caixa.sankey_link
 			 WHERE periodo = $1
 			 ORDER BY nivel, ordem`,
@@ -84,10 +85,143 @@ async function rows(colecao, periodo) {
 	}
 	if (colecao === 'compra') {
 		const q = await pool.query(
-			`SELECT id, data, loja, titulo, valor_total_centavos::float8 AS valor_total_centavos,
+			`SELECT id, data, loja, coalesce(titulo, descricao, '') AS titulo,
+			        valor_total_centavos::float8 AS valor_total_centavos,
+			        valor_pago_centavos::float8 AS valor_pago_centavos,
+			        parcelas, parcelas_pagas, estornada, conta_id,
 			        categoria_id, coalesce(escopo, '') AS escopo
 			 FROM caixa.compra
 			 ORDER BY data DESC`
+		);
+		return q.rows;
+	}
+	if (colecao === 'referencia') {
+		if (!PERIODO.test(periodo ?? '')) return [];
+		const q = await pool.query(
+			`WITH gasto AS (
+				SELECT coicop_codigo AS c,
+				       (-SUM(valor_centavos) / 100.0)::float8 AS v,
+				       COUNT(*)::int AS n
+				FROM caixa.v_mov
+				WHERE coicop_codigo IS NOT NULL
+				  AND tipo IN ('despesa', 'investimento')
+				  AND data_caixa LIKE $1 || '%'
+				GROUP BY 1
+			),
+			por_div AS (
+				SELECT split_part(c, '.', 1) AS div, SUM(v) AS v, SUM(n) AS n
+				FROM gasto
+				GROUP BY 1
+			)
+			SELECT r.codigo, r.nome_pt, r.bloco_503020,
+			       coalesce(p.v, 0)::float8 AS total,
+			       coalesce(p.n, 0)::int AS n
+			FROM caixa.ref_coicop r
+			LEFT JOIN por_div p ON p.div = r.codigo
+			WHERE r.nivel = 'divisao'
+			ORDER BY r.codigo`,
+			[periodo]
+		);
+		return q.rows;
+	}
+	if (colecao === 'regras') {
+		const q = await pool.query(
+			`SELECT r.id, r.prioridade, r.padrao_regex, r.padrao_cat_banco, r.conta_id,
+			        r.sinal, r.tipo, r.escopo, r.categoria_id, r.extraordinario, r.nota,
+			        r.ativa,
+			        (SELECT COUNT(*)::int FROM caixa.fato_lancamento l WHERE l.regra_id = r.id) AS usos
+			 FROM caixa.regra_categorizacao r
+			 ORDER BY r.prioridade`
+		);
+		return q.rows;
+	}
+	if (colecao === 'viagens') {
+		const q = await pool.query(
+			`SELECT v.id, v.chave, v.nome, v.destino, v.ida, v.volta, v.nota,
+			        v.margem, v.empresa,
+			        coalesce(json_agg(vc.compra_id) FILTER (WHERE vc.compra_id IS NOT NULL), '[]') AS compra_ids
+			 FROM caixa.viagem v
+			 LEFT JOIN caixa.viagem_compra vc ON vc.viagem_id = v.id
+			 GROUP BY v.id
+			 ORDER BY v.ida DESC`
+		);
+		return q.rows;
+	}
+	if (colecao === 'ferias') {
+		const q = await pool.query(
+			`SELECT id, chave, inicio, fim, coalesce(grupo, '') AS grupo, inferido, coalesce(nota, '') AS nota
+			 FROM caixa.ferias
+			 ORDER BY inicio DESC`
+		);
+		return q.rows;
+	}
+	if (colecao === 'importacoes') {
+		const q = await pool.query(
+			`SELECT id, fonte, arquivo, importado_em, linhas_lidas, linhas_novas
+			 FROM caixa.importacao
+			 ORDER BY importado_em DESC
+			 LIMIT 80`
+		);
+		return q.rows;
+	}
+	if (colecao === 'faturas') {
+		const q = await pool.query(
+			`SELECT competencia, conta_id
+			 FROM caixa.fatura_cartao
+			 WHERE detalhada = 0
+			 ORDER BY competencia DESC`
+		);
+		return q.rows;
+	}
+	if (colecao === 'pendencias') {
+		const ano = ANO.test(periodo ?? '') ? periodo : (periodo ?? '').slice(0, 4);
+		if (!ANO.test(ano ?? '')) return [];
+		const prefix = ano + '%';
+		const [semRegra, faturas, transferencias] = await Promise.all([
+			pool.query(
+				`SELECT COUNT(*)::int AS n,
+				        (coalesce(SUM(-valor_centavos), 0) / 100.0)::float8 AS v
+				 FROM caixa.fato_lancamento
+				 WHERE regra_id IS NULL AND manual = 0 AND sintetico = 0
+				   AND tipo = 'despesa' AND data_caixa LIKE $1`,
+				[prefix]
+			),
+			pool.query(`SELECT COUNT(*)::int AS n FROM caixa.fatura_cartao WHERE detalhada = 0`),
+			pool.query(
+				`SELECT COUNT(*)::int AS n FROM caixa.v_transferencia_sem_par WHERE data_caixa LIKE $1`,
+				[prefix]
+			)
+		]);
+		return [
+			{
+				sem_regra_n: semRegra.rows[0]?.n ?? 0,
+				sem_regra_v: semRegra.rows[0]?.v ?? 0,
+				faturas_n: faturas.rows[0]?.n ?? 0,
+				transferencias_n: transferencias.rows[0]?.n ?? 0,
+				ano
+			}
+		];
+	}
+	if (colecao === 'pessoas') {
+		const q = await pool.query(
+			`SELECT id, nome, coalesce(relacao, '') AS relacao FROM caixa.dim_pessoa ORDER BY nome`
+		);
+		return q.rows;
+	}
+	if (colecao === 'contas') {
+		const q = await pool.query(
+			`SELECT id, nome, instituicao, tipo, escopo_padrao
+			 FROM caixa.dim_conta
+			 WHERE ativa = 1 AND tipo != 'cartao_final'
+			 ORDER BY tipo, nome`
+		);
+		return q.rows;
+	}
+	if (colecao === 'blocos') {
+		const q = await pool.query(
+			`SELECT id, nome, meta_pct::float8 AS meta_pct, tipo_meta, coalesce(cor, '') AS cor
+			 FROM caixa.ref_bloco
+			 ORDER BY meta_pct DESC`
 		);
 		return q.rows;
 	}

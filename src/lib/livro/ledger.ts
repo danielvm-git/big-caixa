@@ -1,17 +1,225 @@
-import { loadCompras, loadMes, loadSankey } from '$lib/read-model/client';
+import {
+	loadBlocos,
+	loadCompras,
+	loadContas,
+	loadFaturasPendentes,
+	loadFerias,
+	loadImportacoes,
+	loadMes,
+	loadPendencias,
+	loadPessoas,
+	loadReferencia,
+	loadRegras,
+	loadSankey,
+	loadViagens
+} from '$lib/read-model/client';
 import { getSession } from '$lib/auth/session';
-import type { CompraDoc, MesDoc, SankeyDoc } from '$lib/read-model/types';
+import type {
+	BlocoDoc,
+	CompraDoc,
+	ContaDoc,
+	FaturaPendenteDoc,
+	FeriasDoc,
+	ImportacaoDoc,
+	MesDoc,
+	PendenciasDoc,
+	PessoaDoc,
+	ReferenciaDoc,
+	RegraDoc,
+	SankeyDoc,
+	ViagemDoc
+} from '$lib/read-model/types';
 
 export type Ledger = {
 	year: number;
 	month: number;
+	mesAtual: string;
 	months: Record<string, MesDoc[]>;
 	sankey: Record<string, SankeyDoc[]>;
 	compras: CompraDoc[];
+	referencia: Record<string, ReferenciaDoc[]>;
+	regras: RegraDoc[];
+	viagens: ViagemDoc[];
+	ferias: FeriasDoc[];
+	importacoes: ImportacaoDoc[];
+	faturasPendentes: FaturaPendenteDoc[];
+	pendencias: PendenciasDoc | null;
+	pessoas: PessoaDoc[];
+	contas: ContaDoc[];
+	blocos: BlocoDoc[];
 };
 
 export function custoDe(row: MesDoc): number {
 	return (row.custo_recorrente || 0) + (row.custo_extraordinario || 0);
+}
+
+export function somaRecorrente(rows: MesDoc[]): number {
+	return rows.reduce((a, r) => a + (r.custo_recorrente || 0), 0);
+}
+
+export function somaExtraordinario(rows: MesDoc[]): number {
+	return rows.reduce((a, r) => a + (r.custo_extraordinario || 0), 0);
+}
+
+export type MesResumo = {
+	mes: string;
+	casa: number;
+	pessoal: number;
+	familia: number;
+	extraordinario: number;
+	projetado?: boolean;
+};
+
+export function totalResumo(r: MesResumo): number {
+	return r.casa + r.pessoal + r.familia;
+}
+
+function medianaDe(xs: number[]): number {
+	const s = xs.filter((x) => Number.isFinite(x)).sort((a, b) => a - b);
+	if (!s.length) return 0;
+	return s.length % 2 === 1 ? s[s.length / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2;
+}
+
+export const mediana = medianaDe;
+
+export function resumoMes(ledger: Ledger, mes: string): MesResumo {
+	const rows = ledger.months[mes] ?? [];
+	const out: MesResumo = { mes, casa: 0, pessoal: 0, familia: 0, extraordinario: 0 };
+	for (const row of rows) {
+		out.extraordinario += row.custo_extraordinario || 0;
+		const rec = row.custo_recorrente || 0;
+		if (row.escopo === 'casa') out.casa += rec;
+		else if (row.escopo === 'pessoal') out.pessoal += rec;
+		else if (row.escopo === 'familia') out.familia += rec;
+	}
+	return out;
+}
+
+export function mesesCarregados(ledger: Ledger): string[] {
+	return Object.keys(ledger.months).sort();
+}
+
+export function historicoFechado(ledger: Ledger): MesResumo[] {
+	const atual = ledger.mesAtual;
+	return mesesCarregados(ledger)
+		.filter((m) => m < atual)
+		.map((m) => resumoMes(ledger, m));
+}
+
+export function baselineMes(ledger: Ledger): MesResumo {
+	const ult = historicoFechado(ledger).slice(-12);
+	return {
+		mes: 'baseline',
+		casa: medianaDe(ult.map((m) => m.casa)),
+		pessoal: medianaDe(ult.map((m) => m.pessoal)),
+		familia: medianaDe(ult.map((m) => m.familia)),
+		extraordinario: 0,
+		projetado: true
+	};
+}
+
+export function carregarAno(ledger: Ledger, ano: number): MesResumo[] {
+	const atual = ledger.mesAtual;
+	const base = baselineMes(ledger);
+	const reais = new Map<string, MesResumo>();
+	for (const m of mesesCarregados(ledger)) {
+		if (m.startsWith(ano + '-')) reais.set(m, resumoMes(ledger, m));
+	}
+	const out: MesResumo[] = [];
+	for (let i = 1; i <= 12; i++) {
+		const m = ano + '-' + String(i).padStart(2, '0');
+		if (reais.has(m) && m <= atual) {
+			out.push(reais.get(m)!);
+			continue;
+		}
+		if (m > atual) {
+			let casa = base.casa;
+			let pessoal = base.pessoal;
+			let familia = base.familia;
+			const anoAnt = ano - 1 + '-' + String(i).padStart(2, '0');
+			const ant = historicoFechado(ledger).find((x) => x.mes === anoAnt);
+			const baseTot = totalResumo(base);
+			if (ant && baseTot > 0 && totalResumo(ant) > baseTot * 1.15) {
+				const fator = totalResumo(ant) / baseTot;
+				casa *= fator;
+				pessoal *= fator;
+				familia *= fator;
+			}
+			out.push({
+				mes: m,
+				casa,
+				pessoal,
+				familia,
+				extraordinario: 0,
+				projetado: true
+			});
+			continue;
+		}
+		out.push({ mes: m, casa: 0, pessoal: 0, familia: 0, extraordinario: 0 });
+	}
+	return out;
+}
+
+export type MetaBloco = {
+	id: string;
+	nome: string;
+	metaPct: number;
+	teto: boolean;
+	cor: string;
+	valor: number;
+	pct: number;
+	ok: boolean;
+};
+
+export function metas503020(
+	ledger: Ledger,
+	periodo: string
+): { total: number; blocos: MetaBloco[]; pendente: number } {
+	const links = ledger.sankey[periodo] ?? [];
+	const total = links.filter((l) => l.nivel === 1).reduce((a, l) => a + l.valor, 0);
+	const porBloco: Record<string, number> = {};
+	for (const l of links) {
+		if (l.nivel !== 2 || !l.tipo) continue;
+		porBloco[l.tipo] = (porBloco[l.tipo] ?? 0) + l.valor;
+	}
+	const pendente = porBloco.pendente ?? 0;
+	const blocos = (
+		ledger.blocos.length
+			? ledger.blocos
+			: ([
+					{ id: 'necessidade', nome: 'Necessidade', meta_pct: 50, tipo_meta: 'teto', cor: '' },
+					{ id: 'desejo', nome: 'Desejo', meta_pct: 30, tipo_meta: 'teto', cor: '' },
+					{ id: 'futuro', nome: 'Futuro', meta_pct: 20, tipo_meta: 'piso', cor: '' }
+				] as BlocoDoc[])
+	)
+		.slice()
+		.sort((a, b) => b.meta_pct - a.meta_pct)
+		.map((b) => {
+			const v = porBloco[b.id] ?? 0;
+			const pct = total > 0 ? (v / total) * 100 : 0;
+			const teto = b.tipo_meta === 'teto';
+			const ok = teto ? pct <= b.meta_pct : pct >= b.meta_pct;
+			return {
+				id: b.id,
+				nome: b.nome,
+				metaPct: b.meta_pct,
+				teto,
+				cor: b.cor || '',
+				valor: v,
+				pct,
+				ok
+			};
+		});
+	return { total, blocos, pendente };
+}
+
+export function chavesHistorico(year: number, month: number): string[] {
+	const keys: string[] = [];
+	for (let y = year - 2; y <= year; y++) {
+		const end = y === year ? month : 12;
+		for (let m = 1; m <= end; m++) keys.push(chave(y, m));
+	}
+	return keys;
 }
 
 export function chave(ano: number, mes: number): string {
@@ -214,7 +422,8 @@ export async function fetchLedger(): Promise<Ledger | null> {
 	const now = new Date();
 	const year = now.getFullYear();
 	const month = now.getMonth() + 1;
-	const keys = chavesDoAno(year, month);
+	const mesAtual = chave(year, month);
+	const keys = chavesHistorico(year, month);
 	const months: Record<string, MesDoc[]> = {};
 	const sankey: Record<string, SankeyDoc[]> = {};
 	await Promise.all(
@@ -224,6 +433,55 @@ export async function fetchLedger(): Promise<Ledger | null> {
 			sankey[key] = fluxo;
 		})
 	);
-	const compras = await loadCompras();
-	return { year, month, months, sankey, compras };
+	const [
+		compras,
+		regras,
+		viagens,
+		ferias,
+		importacoes,
+		faturasPendentes,
+		pendencias,
+		pessoas,
+		contas,
+		blocos,
+		refAtual
+	] = await Promise.all([
+		loadCompras(),
+		loadRegras(),
+		loadViagens(),
+		loadFerias(),
+		loadImportacoes(),
+		loadFaturasPendentes(),
+		loadPendencias(String(year)),
+		loadPessoas(),
+		loadContas(),
+		loadBlocos(),
+		loadReferencia(mesAtual)
+	]);
+	const referencia: Record<string, ReferenciaDoc[]> = { [mesAtual]: refAtual };
+	return {
+		year,
+		month,
+		mesAtual,
+		months,
+		sankey,
+		compras,
+		referencia,
+		regras,
+		viagens,
+		ferias,
+		importacoes,
+		faturasPendentes,
+		pendencias,
+		pessoas,
+		contas,
+		blocos
+	};
+}
+
+export async function referenciaDoMes(ledger: Ledger, periodo: string): Promise<ReferenciaDoc[]> {
+	if (ledger.referencia[periodo]) return ledger.referencia[periodo];
+	const rows = await loadReferencia(periodo);
+	ledger.referencia[periodo] = rows;
+	return rows;
 }

@@ -11,7 +11,21 @@ import {
 	escopoNome,
 	rotuloMes
 } from './catalog';
-import { chavesDoAno, desenharSankey, fetchLedger, linhas, soma, somaPorCategoria } from './ledger';
+import {
+	baselineMes,
+	carregarAno,
+	chavesDoAno,
+	desenharSankey,
+	fetchLedger,
+	linhas,
+	metas503020,
+	resumoMes,
+	soma,
+	somaExtraordinario,
+	somaPorCategoria,
+	somaRecorrente,
+	totalResumo
+} from './ledger';
 const PATH = {
 	hoje: '/hoje/',
 	fluxo: '/fluxo/',
@@ -637,9 +651,10 @@ export class Book {
 				loja: c.loja,
 				titulo: c.titulo || '',
 				cat: categoria(c.categoria_id).nome,
-				parc: '1/1',
+				parc: (c.parcelas_pagas ?? 1) + '/' + (c.parcelas ?? 1),
 				total: (c.valor_total_centavos || 0) / 100,
-				pago: (c.valor_total_centavos || 0) / 100,
+				pago: ((c.valor_pago_centavos ?? c.valor_total_centavos) || 0) / 100,
+				estornada: !!c.estornada,
 				orig: escopoNome(c.escopo),
 				extra: false,
 				sub: false,
@@ -973,10 +988,12 @@ export class Book {
 		const hr = agora.getHours(),
 			quem = s.ledger ? 'Daniel' : 'Rafael',
 			greet = (hr < 12 ? 'Bom dia, ' : hr < 18 ? 'Boa tarde, ' : 'Boa noite, ') + quem;
-		const totalReal = s.ledger
-			? soma(linhas(s.ledger, this.chavesAtivas(), this.escopoAtual()))
-			: 14980;
-		const spentNow = s.ledger ? c2(totalReal * (s.cnt || 0)) : R(14980 * (s.cnt || 0));
+		const linhasAtivas = s.ledger ? linhas(s.ledger, this.chavesAtivas(), this.escopoAtual()) : [];
+		const totalRec = s.ledger ? somaRecorrente(linhasAtivas) : 14980;
+		const totalExtra = s.ledger ? somaExtraordinario(linhasAtivas) : 0;
+		const totalReal = totalRec;
+		const spentNow = s.ledger ? c2(totalRec * (s.cnt || 0)) : R(14980 * (s.cnt || 0));
+		let extraNote = '';
 		let headline = 'Novembro está 6% acima do ritmo normal; faltam 7 dias.';
 		let paceNote = 'ritmo normal até hoje: R$ 14.130';
 		let projectionNote = 'Projeção de fechamento: R$ 19.610 (ritmo: R$ 18.500)';
@@ -988,16 +1005,22 @@ export class Book {
 			const dias = new Date(agora.getFullYear(), agora.getMonth() + 1, 0).getDate();
 			const faltam = Math.max(0, dias - dia);
 			const keys = this.chavesAtivas();
-			const anteriores = chavesDoAno(s.ledger.year, s.ledger.month).filter((k) => k < keys[0]);
-			const medias = anteriores.map((k) => soma(linhas(s.ledger, [k], this.escopoAtual())));
-			const media = medias.length ? medias.reduce((a, b) => a + b, 0) / medias.length : 0;
-			const esperado = media * (dia / dias);
-			const projecao = dia > 0 ? (totalReal / dia) * dias : totalReal;
+			const base = baselineMes(s.ledger);
+			const esc = this.escopoAtual();
+			const baseTot =
+				esc === 'casa'
+					? base.casa
+					: esc === 'pessoal'
+						? base.pessoal
+						: esc === 'familia'
+							? base.familia
+							: totalResumo(base);
+			const projecao = dia > 0 ? (totalRec / dia) * dias : totalRec;
 			const nomeMes = rotuloMes(Number(keys[0].slice(0, 4)), Number(keys[0].slice(5))).split(
 				' '
 			)[0];
-			if (keys.length === 1 && s.per === 0 && media > 0) {
-				const pct = Math.round((totalReal / (esperado || 1) - 1) * 100);
+			if (keys.length === 1 && s.per === 0 && baseTot > 0) {
+				const pct = Math.round((totalRec / baseTot - 1) * 100);
 				const dir = pct > 0 ? 'acima' : pct < 0 ? 'abaixo' : 'na linha';
 				headline =
 					nomeMes +
@@ -1005,19 +1028,20 @@ export class Book {
 					Math.abs(pct) +
 					'% ' +
 					dir +
-					' da média dos meses anteriores; faltam ' +
+					' da mediana de 12 meses; faltam ' +
 					faltam +
 					' dias.';
 			} else if (keys.length === 1)
 				headline = 'Custo de vida de ' + rotuloMes(s.ledger.year, Number(keys[0].slice(5))) + '.';
 			else headline = 'Custo de vida de ' + s.ledger.year + '.';
-			paceNote = media
-				? 'média dos meses anteriores, até este dia: ' + c2(esperado)
-				: 'sem meses anteriores neste ano para comparar';
+			paceNote = baseTot
+				? 'Baseline (mediana de 12 meses): ' + c2(baseTot)
+				: 'sem meses fechados para mediana';
+			if (totalExtra > 0) extraNote = '+ ' + c2(totalExtra) + ' extraordinário (fora da baseline)';
 			projectionNote = 'Projeção pelo ritmo deste mês: ' + c2(projecao);
-			const topo = Math.max(totalReal, projecao, esperado, 1);
-			barW = (totalReal / topo) * 100 * (s.cnt || 0) + '%';
-			baseW = (Math.min(esperado, topo) / topo) * 100 + '%';
+			const topo = Math.max(totalRec, projecao, baseTot, 1);
+			barW = (totalRec / topo) * 100 * (s.cnt || 0) + '%';
+			baseW = (Math.min(baseTot, topo) / topo) * 100 + '%';
 		}
 		const scopes = s.ledger
 			? ['casa', 'pessoal', 'familia'].map((id) => {
@@ -1052,9 +1076,34 @@ export class Book {
 					go: () => this.drill('mes', { cat: c.n })
 				};
 			});
-		const pendRows = s.ledger ? this.tableRows().filter((r) => r.pendente) : s.pend;
-		const pendN = pendRows.length,
-			pendTot = c2(pendRows.reduce((a, p) => a + (p.total ?? p.v ?? 0), 0));
+		const pendRows = s.ledger ? [] : s.pend;
+		const pen = s.ledger?.pendencias;
+		const pendN = s.ledger
+			? (pen?.sem_regra_n ?? 0) + (pen?.faturas_n ?? 0) + (pen?.transferencias_n ?? 0)
+			: pendRows.length;
+		const pendTot = s.ledger
+			? c2(pen?.sem_regra_v ?? 0)
+			: c2(pendRows.reduce((a, p) => a + (p.total ?? p.v ?? 0), 0));
+		const pendSummary = pen
+			? [
+					{
+						title: 'Despesas sem regra',
+						n: pen.sem_regra_n,
+						detail: pen.sem_regra_v ? c2(pen.sem_regra_v) + ' em aberto' : ''
+					},
+					{
+						title: 'Faturas sem PDF',
+						n: pen.faturas_n,
+						detail: s.ledger.faturasPendentes?.length
+							? s.ledger.faturasPendentes
+									.slice(0, 3)
+									.map((f) => f.competencia)
+									.join(', ') + (s.ledger.faturasPendentes.length > 3 ? '…' : '')
+							: ''
+					},
+					{ title: 'Transferências sem par', n: pen.transferencias_n, detail: 'categoria interna' }
+				]
+			: [];
 		// fluxo
 		const sk = this.sankey();
 		const sTabs = ['Ano', 'Mês', 'Mês ideal'].map((t) => ({
@@ -1346,13 +1395,120 @@ export class Book {
 			bg: s.trip === k ? 'var(--sun)' : 'var(--sf)',
 			go: () => this.set({ trip: k })
 		}));
-		const yrs = [
-			['2022', 9100],
-			['2023', 14300],
-			['2024', 11800],
-			['2025', 16900],
-			['2026', 24640]
-		].map(([l, v]) => ({ l, v: R(v), h: (v / 24640) * 80 + '%' }));
+		if (s.ledger) {
+			const vgs = s.ledger.viagens;
+			const tripId = (() => {
+				const hit = vgs.find((v) => v.chave === s.trip || String(v.id) === s.trip);
+				return hit
+					? hit.chave || String(hit.id)
+					: vgs[0]?.chave || (vgs[0] ? String(vgs[0].id) : s.trip);
+			})();
+			const vNow = vgs.find((v) => v.chave === tripId || String(v.id) === tripId) || vgs[0];
+			const comprasPorId = new Map(s.ledger.compras.map((c) => [c.id, c]));
+			const mkViagem = (v) => {
+				if (!v) return tr;
+				const ids = v.compra_ids || [];
+				const comp = ids
+					.map((id) => comprasPorId.get(id))
+					.filter(Boolean)
+					.map((c) => ({
+						d: dataCurta(c.data),
+						n: c.loja,
+						note: c.titulo || '',
+						val: (c.valor_total_centavos || 0) / 100,
+						pago: ((c.valor_pago_centavos ?? c.valor_total_centavos) || 0) / 100,
+						on: !c.estornada
+					}));
+				const isW = !!v.empresa;
+				const mk = comp.filter((c) => c.on);
+				const totT = isW ? 0 : mk.reduce((a, c) => a + c.val, 0),
+					pagoT = mk.reduce((a, c) => a + c.pago, 0);
+				const tipos = {};
+				mk.forEach((c) => (tipos[c.note || c.n] = (tipos[c.note || c.n] || 0) + c.val));
+				const dias =
+					Math.max(1, Math.round((new Date(v.volta) - new Date(v.ida)) / 864e5) + 1) || 1;
+				Object.assign(tr, {
+					nome: v.nome,
+					dest: v.destino || '—',
+					datas: dataCurta(v.ida) + '–' + dataCurta(v.volta),
+					nota: v.nota || '',
+					total: isW ? 'R$ 0 (empresa paga)' : R(totT),
+					dia: isW ? '—' : R(totT / dias),
+					pago: isW ? '—' : R(pagoT),
+					apagar: isW ? '—' : R(totT - pagoT),
+					tipos: isW
+						? []
+						: Object.entries(tipos).map(([n, val]) => ({
+								n,
+								v: R(val),
+								w: totT ? (val / totT) * 100 + '%' : '0%'
+							})),
+					compras: comp.map((c) => ({
+						d: c.d,
+						n: c.n,
+						note: c.note,
+						v: R(c.val),
+						on: c.on,
+						bg: 'transparent',
+						tog: () => {}
+					}))
+				});
+			};
+			mkViagem(vNow);
+			tripTabs.length = 0;
+			vgs.forEach((v) => {
+				const k = v.chave || String(v.id);
+				tripTabs.push({
+					l: v.nome,
+					bg: k === tripId ? 'var(--sun)' : 'var(--sf)',
+					go: () => this.set({ trip: k })
+				});
+			});
+			periods.length = 0;
+			const feriasPorAno = new Map();
+			for (const f of s.ledger.ferias) {
+				const y = f.inicio.slice(0, 4);
+				if (!feriasPorAno.has(y)) feriasPorAno.set(y, []);
+				feriasPorAno.get(y).push(f);
+			}
+			[...feriasPorAno.entries()]
+				.sort((a, b) => b[0].localeCompare(a[0]))
+				.slice(0, 4)
+				.forEach(([y, fs]) => {
+					periods.push({
+						n: y,
+						d: fs.length + ' período' + (fs.length > 1 ? 's' : ''),
+						items: fs.map((f) => ({
+							l: dataCurta(f.inicio) + '–' + dataCurta(f.fim),
+							s: f.grupo || f.nota || 'férias'
+						}))
+					});
+				});
+			tl.length = 0;
+		}
+		const yrs = s.ledger
+			? (() => {
+					const porAno = new Map();
+					for (const v of s.ledger.viagens) {
+						const y = v.ida.slice(0, 4);
+						let sum = 0;
+						for (const id of v.compra_ids || []) {
+							const c = s.ledger.compras.find((x) => x.id === id);
+							if (c && !c.estornada) sum += (c.valor_total_centavos || 0) / 100;
+						}
+						porAno.set(y, (porAno.get(y) || 0) + sum);
+					}
+					return [...porAno.entries()]
+						.sort((a, b) => a[0].localeCompare(b[0]))
+						.map(([l, v]) => ({ l, v: R(v), h: '40%' }));
+				})()
+			: [
+					['2022', 9100],
+					['2023', 14300],
+					['2024', 11800],
+					['2025', 16900],
+					['2026', 24640]
+				].map(([l, v]) => ({ l, v: R(v), h: (v / 24640) * 80 + '%' }));
 		const projs = Object.entries(this.PROJ).map(([k, p]) => {
 			const t = p.items.reduce((a, b) => a + b[2], 0);
 			return {
@@ -1369,35 +1525,86 @@ export class Book {
 		const P = this.PROJ[s.proj],
 			pj = { nome: P.nome, items: P.items.map((i) => ({ d: i[0], n: i[1], v: R(i[2]) })) };
 		// ano
-		const mx2 = 26000;
-		const ybars = this.MN.map((l, i) => ({
-			l,
-			v: (this.SER[i] / 1000).toFixed(1).replace('.', ','),
-			h: (this.SER[i] / mx2) * 100 + '%',
-			bg:
-				i < 10
-					? 'var(--N)'
-					: 'repeating-linear-gradient(45deg,var(--N),var(--N) 4px,transparent 4px,transparent 8px)',
-			bd: i < 10 ? '0' : '1.5px solid var(--N)'
-		}));
+		const anoSerie = s.ledger ? carregarAno(s.ledger, s.ledger.year) : null;
+		const mx2 = anoSerie ? Math.max(...anoSerie.map((r) => totalResumo(r)), 1) : 26000;
+		const ybars = anoSerie
+			? anoSerie.map((r, i) => ({
+					l: this.MN[i],
+					v: (totalResumo(r) / 1000).toFixed(1).replace('.', ','),
+					h: (totalResumo(r) / mx2) * 100 + '%',
+					bg: r.projetado
+						? 'repeating-linear-gradient(45deg,var(--N),var(--N) 4px,transparent 4px,transparent 8px)'
+						: 'var(--N)',
+					bd: r.projetado ? '1.5px solid var(--N)' : '0'
+				}))
+			: this.MN.map((l, i) => ({
+					l,
+					v: (this.SER[i] / 1000).toFixed(1).replace('.', ','),
+					h: (this.SER[i] / mx2) * 100 + '%',
+					bg:
+						i < 10
+							? 'var(--N)'
+							: 'repeating-linear-gradient(45deg,var(--N),var(--N) 4px,transparent 4px,transparent 8px)',
+					bd: i < 10 ? '0' : '1.5px solid var(--N)'
+				}));
 		const saveM = (2400 * s.cut) / 100;
-		const blocks = [
-			['N', 'Necessidade', '54%', '50%'],
-			['D', 'Desejo', '25%', '30%'],
-			['F', 'Futuro', '21%', '20%']
-		].map(([b, n, r, m]) => ({ b, n, real: r, meta: m, bx: this.bx(b) }));
-		const donut = 'conic-gradient(var(--N) 0 54%,var(--D) 54% 79%,var(--F) 79% 100%)';
+		const periodoMeta = s.ledger ? this.chavesAtivas()[0] || s.ledger.mesAtual : '';
+		const meta503020 = s.ledger ? metas503020(s.ledger, periodoMeta) : null;
+		const idLetra = { necessidade: 'N', desejo: 'D', futuro: 'F' };
+		const blocks = meta503020
+			? meta503020.blocos.map((b) => ({
+					b: idLetra[b.id] || 'N',
+					n: b.nome,
+					real: Math.round(b.pct) + '%',
+					meta: Math.round(b.metaPct) + '%',
+					ok: b.ok,
+					bx: this.bx(idLetra[b.id] || 'N')
+				}))
+			: [
+					['N', 'Necessidade', '54%', '50%'],
+					['D', 'Desejo', '25%', '30%'],
+					['F', 'Futuro', '21%', '20%']
+				].map(([b, n, r, m]) => ({ b, n, real: r, meta: m, bx: this.bx(b) }));
+		const donut = meta503020
+			? (() => {
+					const p = meta503020.blocos;
+					const n = p.find((x) => x.id === 'necessidade')?.pct || 0;
+					const d = p.find((x) => x.id === 'desejo')?.pct || 0;
+					const f = p.find((x) => x.id === 'futuro')?.pct || 0;
+					const n2 = n + d;
+					return (
+						'conic-gradient(var(--N) 0 ' +
+						n +
+						'%,var(--D) ' +
+						n +
+						'% ' +
+						n2 +
+						'%,var(--F) ' +
+						n2 +
+						'% 100%)'
+					);
+				})()
+			: 'conic-gradient(var(--N) 0 54%,var(--D) 54% 79%,var(--F) 79% 100%)';
 		const goals = [
 			['Reserva de emergência (6 meses)', 62000, 108000],
 			['Viagem 2027', 9000, 25000],
 			['Faculdade da Helena', 34000, 120000],
 			['Previdência 2026', 19800, 24000]
 		].map(([n, a, b]) => ({ n, t: R(a) + ' de ' + R(b), w: (a / b) * 100 + '%' }));
-		const files = [
-			['itau_conta_nov.csv', '22/11 09:12', '12 novos', 'var(--moss)'],
-			['nubank_fatura_out.pdf', '22/11 09:13', '48 novos, 3 repetidos', 'var(--moss)'],
-			['caixa_poupanca.csv', '22/11 09:14', 'Erro: formato', 'var(--terra)']
-		].map(([n, d, st, c]) => ({ n, d, s: st, c }));
+		const files = s.ledger
+			? s.ledger.importacoes.map((i) => ({
+					n: i.arquivo,
+					d: (i.importado_em || '').slice(5, 16).replace('T', ' ').replace('-', '/'),
+					s:
+						(i.linhas_novas ? i.linhas_novas + ' novos' : '0 novos') +
+						(i.linhas_lidas ? ' · ' + i.linhas_lidas + ' lidos' : ''),
+					c: i.linhas_novas > 0 ? 'var(--moss)' : 'var(--mut)'
+				}))
+			: [
+					['itau_conta_nov.csv', '22/11 09:12', '12 novos', 'var(--moss)'],
+					['nubank_fatura_out.pdf', '22/11 09:13', '48 novos, 3 repetidos', 'var(--moss)'],
+					['caixa_poupanca.csv', '22/11 09:14', 'Erro: formato', 'var(--terra)']
+				].map(([n, d, st, c]) => ({ n, d, s: st, c }));
 		const pend = pendRows.map((p) => ({
 			loja: p.loja,
 			titulo: p.titulo,
@@ -1422,33 +1629,49 @@ export class Book {
 				);
 			}
 		}));
-		const rules = s.rules.map((r, i) => ({
-			i: i + 1,
-			t: r[0],
-			c: r[1],
-			u: r[2] ? r[2] + ' usos' : 'nunca dispara',
-			col: r[2] ? 'var(--mut)' : 'var(--terra)',
-			up: () => this.mv(i, -1),
-			dn: () => this.mv(i, 1)
-		}));
+		const rules = s.ledger
+			? s.ledger.regras.map((r) => ({
+					i: r.prioridade,
+					t: r.padrao_regex || r.padrao_cat_banco || r.nota || r.id,
+					c: categoria(r.categoria_id).nome,
+					u: r.usos ? r.usos + ' usos' : 'nunca dispara',
+					col: r.usos ? 'var(--mut)' : 'var(--terra)',
+					up: () => this.toast('Prioridade só muda no classificador'),
+					dn: () => this.toast('Prioridade só muda no classificador')
+				}))
+			: s.rules.map((r, i) => ({
+					i: i + 1,
+					t: r[0],
+					c: r[1],
+					u: r[2] ? r[2] + ' usos' : 'nunca dispara',
+					col: r[2] ? 'var(--mut)' : 'var(--terra)',
+					up: () => this.mv(i, -1),
+					dn: () => this.mv(i, 1)
+				}));
 		const hit = s.test
-			? s.rules.find((r) =>
-					r[0]
-						.toLowerCase()
-						.replace(/[“”*]/g, '')
-						.split(/ \| |contém /)
-						.some(
-							(t) =>
-								(t.trim() &&
-									s.test.toLowerCase().includes(
-										t
-											.trim()
-											.toLowerCase()
-											.replace(/\s*\*$/, '')
-									)) ||
-								(t.trim().toLowerCase().includes(s.test.toLowerCase()) && s.test.length > 2)
-						)
-				)
+			? s.ledger
+				? s.ledger.regras.find((r) => {
+						const p = (r.padrao_regex || r.padrao_cat_banco || '').toLowerCase();
+						const t = s.test.toLowerCase();
+						return (p && (p.includes(t) || t.includes(p.replace(/\|.*$/, '').trim()))) || false;
+					})
+				: s.rules.find((r) =>
+						r[0]
+							.toLowerCase()
+							.replace(/[“”*]/g, '')
+							.split(/ \| |contém /)
+							.some(
+								(t) =>
+									(t.trim() &&
+										s.test.toLowerCase().includes(
+											t
+												.trim()
+												.toLowerCase()
+												.replace(/\s*\*$/, '')
+										)) ||
+									(t.trim().toLowerCase().includes(s.test.toLowerCase()) && s.test.length > 2)
+							)
+					)
 			: null;
 		const COI = [
 			['01', 'Alimentos e bebidas não alcoólicas', 2640, 'Mercado'],
@@ -1465,37 +1688,71 @@ export class Book {
 			['12', 'Seguros e serviços financeiros', 1800, 'Previdência'],
 			['13', 'Cuidados pessoais e bens diversos', 0, 'Ajuda familiar']
 		];
-		const coicop = COI.map(([k, n, v, c]) => ({
-			k,
-			n,
-			v: R(v),
-			cats: c,
-			open: s.coi[k],
-			ic: s.coi[k] ? 'ph ph-caret-up' : 'ph ph-caret-down',
-			tog: () => this.setState((st) => ({ coi: { ...st.coi, [k]: !st.coi[k] } }))
-		}));
-		const phones = [
-			{
-				t: 'Hoje',
-				h: greet + '. Novembro está 6% acima do ritmo normal.',
-				rows: [
-					{ a: 'Custo até agora', b: R(14980) },
-					{ a: 'Projeção de fechamento', b: R(19610) },
-					{ a: '7 compras a classificar', b: pendTot },
-					{ a: 'Fatura Nubank, 28/11', b: 'R$ 4.812' }
+		const refMes = s.ledger
+			? s.ledger.referencia[this.chavesAtivas()[0] || s.ledger.mesAtual] || []
+			: [];
+		const coicop = s.ledger
+			? refMes.map((r) => ({
+					k: r.codigo,
+					n: r.nome_pt,
+					v: c2(r.total),
+					cats: r.bloco_503020 || (r.n ? '' : '—'),
+					open: s.coi[r.codigo],
+					ic: s.coi[r.codigo] ? 'ph ph-caret-up' : 'ph ph-caret-down',
+					tog: () => this.setState((st) => ({ coi: { ...st.coi, [r.codigo]: !st.coi[r.codigo] } }))
+				}))
+			: COI.map(([k, n, v, c]) => ({
+					k,
+					n,
+					v: R(v),
+					cats: c,
+					open: s.coi[k],
+					ic: s.coi[k] ? 'ph ph-caret-up' : 'ph ph-caret-down',
+					tog: () => this.setState((st) => ({ coi: { ...st.coi, [k]: !st.coi[k] } }))
+				}));
+		const phones = s.ledger
+			? [
+					{
+						t: 'Hoje',
+						h: greet + '. ' + headline.split(';')[0] + '.',
+						rows: [
+							{ a: 'Custo até agora', b: spentNow },
+							{ a: paceNote, b: '' },
+							{ a: 'Pendências no ano', b: String(pendN) },
+							{ a: projectionNote, b: '' }
+						]
+					},
+					{
+						t: 'Pendências',
+						h: pendN ? pendN + ' itens pedem revisão' : 'Nada pendente',
+						rows: pendSummary.map((p) => ({
+							a: p.title,
+							b: p.n + (p.detail ? ' · ' + p.detail : '')
+						}))
+					}
 				]
-			},
-			{
-				t: 'Pendências',
-				h: 'Falta classificar ' + pendN + ' compras',
-				rows: s.pend.slice(0, 5).map((p) => ({ a: p.loja + ' → ' + p.sug, b: c2(p.v) }))
-			},
-			{
-				t: 'Fluxo (versão simples)',
-				h: 'Para onde foi o dinheiro',
-				rows: stack.map((b) => ({ a: b.n, b: b.v }))
-			}
-		];
+			: [
+					{
+						t: 'Hoje',
+						h: greet + '. Novembro está 6% acima do ritmo normal.',
+						rows: [
+							{ a: 'Custo até agora', b: R(14980) },
+							{ a: 'Projeção de fechamento', b: R(19610) },
+							{ a: '7 compras a classificar', b: pendTot },
+							{ a: 'Fatura Nubank, 28/11', b: 'R$ 4.812' }
+						]
+					},
+					{
+						t: 'Pendências',
+						h: 'Falta classificar ' + pendN + ' compras',
+						rows: s.pend.slice(0, 5).map((p) => ({ a: p.loja + ' → ' + p.sug, b: c2(p.v) }))
+					},
+					{
+						t: 'Fluxo (versão simples)',
+						h: 'Para onde foi o dinheiro',
+						rows: stack.map((b) => ({ a: b.n, b: b.v }))
+					}
+				];
 		// cmd
 		const items = [
 			...MOM.flatMap((m) => m.subs.map((x) => ({ k: 'Tela', n: x[1], go: () => this.nav(x[0]) }))),
@@ -1526,16 +1783,25 @@ export class Book {
 				}
 			}));
 		// fechar
-		const cst = s.closeStep,
-			cs = {
-				s0: cst === 0,
-				s1: cst === 1,
-				s2: cst === 2,
-				s3: cst === 3,
-				s4: cst === 4,
-				done: cst === 5,
-				nav: cst >= 0 && cst < 5
-			};
+		const cst = s.closeStep;
+		const cs = s.ledger
+			? { summary: cst >= 0, nav: false }
+			: {
+					s0: cst === 0,
+					s1: cst === 1,
+					s2: cst === 2,
+					s3: cst === 3,
+					s4: cst === 4,
+					done: cst === 5,
+					nav: cst >= 0 && cst < 5
+				};
+		const realizadoAno = anoSerie
+			? anoSerie.filter((r) => !r.projetado).reduce((a, r) => a + totalResumo(r), 0)
+			: 0;
+		const projecaoAno = anoSerie
+			? anoSerie.filter((r) => r.projetado).reduce((a, r) => a + totalResumo(r), 0)
+			: 0;
+		const closeAnoTotal = realizadoAno + projecaoAno;
 		const pickRow = s.picker;
 		const pickList = catNames.map((n) => ({
 			n,
@@ -1625,26 +1891,28 @@ export class Book {
 				: 'segunda, 23 de novembro',
 			headline,
 			paceNote,
+			extraNote,
 			projectionNote,
 			real: !!s.real,
 			sample: !s.real,
-			gap:
-				!!s.real &&
-				[
-					'viagens',
-					'projetos',
-					'ano',
-					'metas',
-					'importar',
-					'regras',
-					'referencia',
-					'mobile'
-				].includes(route),
+			gap: !!s.real && route === 'projetos',
 			gapTitle: this.title(route),
 			who: s.ledger ? 'Daniel' : 'Rafael Andrade',
 			mail: s.ledger ? s.email || '' : 'rafael@casa.exemplo',
-			people: s.ledger ? PESSOAS : 'Rafael, Mariana, Helena (filha)',
-			accounts: s.ledger ? CONTAS : 'Itaú Conta · Itaú Visa · Nubank · Caixa poupança',
+			people: s.ledger
+				? s.ledger.pessoas.length
+					? s.ledger.pessoas
+							.map((p) => p.nome + (p.relacao ? ' (' + p.relacao + ')' : ''))
+							.join(', ')
+					: PESSOAS
+				: 'Rafael, Mariana, Helena (filha)',
+			accounts: s.ledger
+				? s.ledger.contas.length
+					? s.ledger.contas
+							.map((c) => c.instituicao + ' · ' + c.nome + ' (' + c.tipo + ')')
+							.join(' · ')
+					: CONTAS
+				: 'Itaú Conta · Itaú Visa · Nubank · Caixa poupança',
 			escopoShare: s.ledger ? scopes.map((sc) => sc.n + ' ' + sc.v).join(' · ') : '',
 			fluxoHint: s.ledger
 				? 'Fontes, escopos e categorias saem do livro, no período escolhido.'
@@ -1656,6 +1924,8 @@ export class Book {
 			topCats,
 			pendN,
 			pendTot,
+			pendSummary,
+			pendEmpty: s.ledger ? !pendN : !s.pend.length,
 			goPend: () => this.nav('pendencias'),
 			goCompras: () => this.nav('compras'),
 			goImport: () => this.nav('importar'),
@@ -1728,29 +1998,46 @@ export class Book {
 			ybars,
 			baseY: (18500 / mx2) * 100 + '%',
 			idealY: (17500 / mx2) * 100 + '%',
-			insights: [
-				'Dezembro costuma custar 18% mais que o ritmo normal.',
-				'Restaurantes caiu 14% em relação a outubro.',
-				'Julho e agosto foram os meses mais caros: viagem e reforma.',
-				'Se mantiver o ritmo, o ano fecha com R$ 215 mil em custo de vida.'
-			],
+			insights: s.ledger
+				? [
+						'Projeção = mediana dos últimos 12 meses, ajustada quando o mesmo mês do ano anterior fugiu da curva.',
+						'Realizado até ' +
+							rotuloMes(s.ledger.year, s.ledger.month) +
+							': ' +
+							c2(realizadoAno) +
+							'.',
+						'Meses futuros no gráfico usam hachura.',
+						'O ano fecha perto de ' + c2(closeAnoTotal) + ' (realizado + projeção).'
+					]
+				: [
+						'Dezembro costuma custar 18% mais que o ritmo normal.',
+						'Restaurantes caiu 14% em relação a outubro.',
+						'Julho e agosto foram os meses mais caros: viagem e reforma.',
+						'Se mantiver o ritmo, o ano fecha com R$ 215 mil em custo de vida.'
+					],
 			cut: s.cut,
 			setCut: (e) => this.set({ cut: +e.target.value }),
 			saveM: R(saveM),
 			saveY: R(saveM * 12),
-			yearEnd: R(215000 - saveM),
+			yearEnd: s.ledger ? c2(closeAnoTotal) : R(215000 - saveM),
+			closeAnoTotal: s.ledger ? c2(closeAnoTotal) : '',
+			showMetasGoals: !s.ledger,
 			donut,
 			blocks,
 			goals,
 			files,
 			pend,
-			pendEmpty: !s.pend.length,
 			rules,
 			test: s.test,
 			setTest: (e) => this.set({ test: e.target.value }),
 			testRes: s.test
 				? hit
-					? 'Casa com: “' + hit[0] + '” → ' + hit[1]
+					? s.ledger
+						? 'Casa com: “' +
+							(hit.padrao_regex || hit.padrao_cat_banco || hit.id) +
+							'” → ' +
+							categoria(hit.categoria_id).nome
+						: 'Casa com: “' + hit[0] + '” → ' + hit[1]
 					: 'Nenhuma regra casa'
 				: '',
 			coicop,

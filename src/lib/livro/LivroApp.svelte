@@ -146,8 +146,9 @@
 				<div style="max-width:720px;display:flex;flex-direction:column;gap:12px;animation:up .3s">
 					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">{v.gapTitle}</h1>
 					<p style="margin:0;color:var(--mut);font-size:15px;max-width:52ch">
-						Esta parte ainda mostrava a casa de exemplo do protótipo. Os extratos e as faturas
-						entram em Hoje, Fluxo, Mês, Compras e Pendências.
+						{v.s.projetos
+							? 'Obras e reformas não têm tabela no livro (nem no app Swift). Use categorias e compras para acompanhar gastos.'
+							: 'Esta parte ainda mostrava a casa de exemplo do protótipo.'}
 					</p>
 				</div>
 			{/if}
@@ -171,6 +172,9 @@
 									<span style={v.bl}>{v.paceNote}</span>
 								</span>
 							</div>
+							{#if v.extraNote}<div style="font-size:13px;color:var(--terra);margin:-6px 0 10px">
+									{v.extraNote}
+								</div>{/if}
 							<div style="position:relative;height:14px;border-radius:7px;background:var(--sf2)">
 								<div
 									style="height:14px;border-radius:7px;background:var(--terra);width:{v.barW}"
@@ -193,10 +197,12 @@
 								<i class="ph ph-tag" style="color:var(--terra);font-size:20px"></i><span
 									style="flex:1;text-align:left"
 								>
-									<b>{v.pendN} compras sem classificação</b><br /><span
-										style="color:var(--mut);font-size:12px;{v.bl}"
-									>
-										{v.pendTot} no total
+									<b>
+										{v.real
+											? v.pendN + ' pendências no livro'
+											: v.pendN + ' compras sem classificação'}
+									</b><br /><span style="color:var(--mut);font-size:12px;{v.bl}">
+										{v.real ? 'Sem regra, faturas ou transferências' : v.pendTot + ' no total'}
 									</span>
 								</span>→
 							</button>
@@ -615,7 +621,7 @@
 				</div>
 			{/if}
 
-			{#if v.s.viagens && v.sample}
+			{#if v.s.viagens}
 				<div style="max-width:1180px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
 					<div>
 						<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">
@@ -810,7 +816,7 @@
 				</div>
 			{/if}
 
-			{#if v.s.ano && v.sample}
+			{#if v.s.ano}
 				<div style="max-width:1100px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
 					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">O ano e o que vem a seguir</h1>
 					<div style={v.card}>
@@ -866,7 +872,7 @@
 				</div>
 			{/if}
 
-			{#if v.s.metas && v.sample}
+			{#if v.s.metas}
 				<div style="max-width:1100px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
 					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">50/30/20 e metas</h1>
 					<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px">
@@ -888,42 +894,46 @@
 									</div>{/each}
 							</div>
 						</div>
-						<div style="{v.card}display:flex;flex-direction:column;gap:12px">
-							<b style="font:600 17px 'Source Serif 4',serif">Metas</b>
-							{#each v.goals as g}<div>
-									<div style="display:flex;justify-content:space-between;font-size:13px">
-										<span>{g.n}</span><span style={v.bl}>{g.t}</span>
-									</div>
-									<div style="height:10px;background:var(--sf2);border-radius:5px;margin-top:4px">
-										<div
-											style="height:10px;border-radius:5px;background:var(--moss);width:{g.w}"
-										></div>
-									</div>
-								</div>{/each}
-						</div>
+						{#if v.showMetasGoals}<div style="{v.card}display:flex;flex-direction:column;gap:12px">
+								<b style="font:600 17px 'Source Serif 4',serif">Metas</b>
+								{#each v.goals as g}<div>
+										<div style="display:flex;justify-content:space-between;font-size:13px">
+											<span>{g.n}</span><span style={v.bl}>{g.t}</span>
+										</div>
+										<div style="height:10px;background:var(--sf2);border-radius:5px;margin-top:4px">
+											<div
+												style="height:10px;border-radius:5px;background:var(--moss);width:{g.w}"
+											></div>
+										</div>
+									</div>{/each}
+							</div>{/if}
 					</div>
-					<div style={v.card}>
-						<b>Mês ideal como referência</b>
-						<div style="font-size:14px;color:var(--mut);margin-top:4px">
-							Para uma renda de R$ 19.080: R$ 9.540 em necessidades, R$ 5.724 em desejos e R$ 3.816
-							no futuro. Compare no <a href="#" onclick={v.goFluxo}>Fluxo de caixa</a>, aba “Mês
-							ideal”.
-						</div>
-					</div>
+					{#if v.sample}<div style={v.card}>
+							<b>Mês ideal como referência</b>
+							<div style="font-size:14px;color:var(--mut);margin-top:4px">
+								Para uma renda de R$ 19.080: R$ 9.540 em necessidades, R$ 5.724 em desejos e R$
+								3.816 no futuro. Compare no <a href="#" onclick={v.goFluxo}>Fluxo de caixa</a>, aba
+								“Mês ideal”.
+							</div>
+						</div>{/if}
 				</div>
 			{/if}
 
-			{#if v.s.importar && v.sample}
+			{#if v.s.importar}
 				<div style="max-width:900px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
 					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Importar extratos</h1>
-					<div
-						style="border:2px dashed var(--ln);border-radius:16px;padding:40px;text-align:center;background:var(--sf)"
-					>
-						<i class="ph ph-upload-simple" style="font-size:32px"></i>
-						<div style="margin-top:6px"><b>Solte aqui</b> os arquivos CSV ou PDF de fatura</div>
-					</div>
+					{#if v.real}<p style="margin:0;color:var(--mut);font-size:14px">
+							O envio de arquivos roda no Mac (<code>python3 -m livrocaixa import</code>). Aqui vê o
+							histórico gravado no livro.
+						</p>{/if}
+					{#if v.sample}<div
+							style="border:2px dashed var(--ln);border-radius:16px;padding:40px;text-align:center;background:var(--sf)"
+						>
+							<i class="ph ph-upload-simple" style="font-size:32px"></i>
+							<div style="margin-top:6px"><b>Solte aqui</b> os arquivos CSV ou PDF de fatura</div>
+						</div>{/if}
 					<div style={v.card}>
-						<b>Último envio</b>{#each v.files as f}<div
+						<b>{v.real ? 'Histórico de importação' : 'Último envio'}</b>{#each v.files as f}<div
 								style="display:grid;grid-template-columns:1fr 120px 100px;gap:10px;padding:10px 0;border-top:1px solid var(--ln);margin-top:8px;font-size:14px"
 							>
 								<span>{f.n}</span><span style="color:var(--mut)">{f.d}</span><span
@@ -932,12 +942,12 @@
 									{f.s}
 								</span>
 							</div>{/each}
-						<div
-							style="background:var(--mossBg);padding:10px 12px;border-radius:10px;font-size:13px;margin-top:6px"
-						>
-							Conferência de saldo: Itaú Conta fecha em <b style={v.bl}>R$ 8.214,60</b>, igual ao
-							extrato.
-						</div>
+						{#if v.sample}<div
+								style="background:var(--mossBg);padding:10px 12px;border-radius:10px;font-size:13px;margin-top:6px"
+							>
+								Conferência de saldo: Itaú Conta fecha em <b style={v.bl}>R$ 8.214,60</b>, igual ao
+								extrato.
+							</div>{/if}
 					</div>
 				</div>
 			{/if}
@@ -945,30 +955,35 @@
 			{#if v.s.pendencias}
 				<div style="max-width:960px;display:flex;flex-direction:column;gap:14px;animation:up .3s">
 					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">
-						Falta classificar {v.pendN} compras
+						{v.real ? v.pendN + ' pendências no ano' : 'Falta classificar ' + v.pendN + ' compras'}
 					</h1>
 					{#if v.pendEmpty}<div style="{v.card}text-align:center;padding:48px">
 							<i class="ph ph-confetti" style="font-size:32px"></i>
 							<div style="font:600 20px 'Source Serif 4',serif">Tudo classificado</div>
 						</div>{/if}
-					{#each v.pend as p}<div
-							style="{v.card}display:flex;gap:14px;align-items:center;padding:12px 16px"
-						>
-							<div style="flex:1;cursor:pointer" onclick={p.open}>
-								<b>{p.loja}</b><br /><span style="font-size:12px;color:var(--mut)">
-									{p.titulo} · {p.date}
-								</span>
-							</div>
-							<span style="font-variant-numeric:tabular-nums;{v.bl}">{p.v}</span>
-							{#if p.sug}<span style="font-size:13px;color:var(--mut)">
-									parece <b style="color:var(--ink)">{p.sug}</b>{#if p.conf}, {p.conf}{/if}
-								</span>{/if}
-							<button onclick={p.ok} style={v.btnP}>Aprovar</button>
-						</div>{/each}
+					{#if v.real}{#each v.pendSummary as p}<div
+								style="{v.card}padding:14px 16px;font-size:14px"
+							>
+								<b>{p.title}</b> · {p.n}{#if p.detail}
+									<span style="color:var(--mut)"> — {p.detail}</span>{/if}
+							</div>{/each}{:else}{#each v.pend as p}<div
+								style="{v.card}display:flex;gap:14px;align-items:center;padding:12px 16px"
+							>
+								<div style="flex:1;cursor:pointer" onclick={p.open}>
+									<b>{p.loja}</b><br /><span style="font-size:12px;color:var(--mut)">
+										{p.titulo} · {p.date}
+									</span>
+								</div>
+								<span style="font-variant-numeric:tabular-nums;{v.bl}">{p.v}</span>
+								{#if p.sug}<span style="font-size:13px;color:var(--mut)">
+										parece <b style="color:var(--ink)">{p.sug}</b>{#if p.conf}, {p.conf}{/if}
+									</span>{/if}
+								<button onclick={p.ok} style={v.btnP}>Aprovar</button>
+							</div>{/each}{/if}
 				</div>
 			{/if}
 
-			{#if v.s.regras && v.sample}
+			{#if v.s.regras}
 				<div style="max-width:960px;display:flex;flex-direction:column;gap:14px;animation:up .3s">
 					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Regras de classificação</h1>
 					<div style="color:var(--mut);font-size:14px">
@@ -999,7 +1014,7 @@
 				</div>
 			{/if}
 
-			{#if v.s.referencia && v.sample}
+			{#if v.s.referencia}
 				<div style="max-width:960px;display:flex;flex-direction:column;gap:10px;animation:up .3s">
 					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">
 						Referência ONU · COICOP 2018
@@ -1051,7 +1066,7 @@
 				</div>
 			{/if}
 
-			{#if v.s.mobile && v.sample}
+			{#if v.s.mobile}
 				<div style="display:flex;gap:28px;flex-wrap:wrap;justify-content:center;animation:up .3s">
 					{#each v.phones as ph}<div>
 							<div style="text-align:center;font-size:13px;color:var(--mut);margin-bottom:8px">
@@ -1202,14 +1217,18 @@
 				style="flex:1;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto"
 			>
 				<div style="max-width:620px;width:100%;display:flex;flex-direction:column;gap:16px">
-					{#if v.real}
-						<h1 style="font:600 32px 'Source Serif 4',serif;margin:0">
-							O fechamento ainda não grava no livro
+					{#if v.cs.summary}<h1 style="font:600 32px 'Source Serif 4',serif;margin:0">
+							Resumo do ano · fechamento
 						</h1>
-						<p style="margin:0;color:var(--mut)">
-							Os passos seguintes eram da casa de exemplo. O custo do mês está em Hoje.
+						<p style="margin:0;color:var(--mut);font-size:14px">
+							Sem gravar fechamento: o livro só lê. Projeção segue a regra do app Swift (mediana +
+							sazonal).
 						</p>
-					{/if}
+						<div style="{v.card}font-size:14px;display:flex;flex-direction:column;gap:8px">
+							<span>Realizado + projeção: <b style={v.bl}>{v.closeAnoTotal || v.yearEnd}</b></span>
+							{#each v.insights as i}<span>{i}</span>{/each}
+						</div>
+						<button onclick={v.closeX} style={v.btnP}>Fechar</button>{/if}
 					{#if v.sample && v.cs.s0}<h1 style="font:600 32px 'Source Serif 4',serif;margin:0">
 							Falta importar alguma coisa?
 						</h1>
