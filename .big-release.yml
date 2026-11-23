@@ -1,0 +1,8 @@
+# big-release v2.8.1 — publica só tag git e GitHub Release. Sem publisher npm.
+git:
+  enabled: true
+github:
+  enabled: true
+publishers:
+  npm:
+    enabled: false

@@ -1,0 +1,31 @@
+node_modules
+
+# Output
+.output
+/.svelte-kit
+/build
+/test-results
+/playwright-report
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Segredos e dados financeiros: NUNCA no repositório
+.env
+.env.*
+!.env.example
+.envrc
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.db
+*.csv
+*.pdf
+logs/
+deploy-meta.json
+.data/
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
