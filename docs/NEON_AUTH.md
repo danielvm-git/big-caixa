@@ -7,7 +7,9 @@ O e-mail/senha do BigBase deixa de ser usado no browser. Quem entra passa pelo *
 ```bash
 npm i -g neonctl
 neonctl auth          # uma vez, abre o browser
+neonctl orgs list     # copie o org-id (ex.: Daniel → org-hidden-truth-74284896)
 cd /Users/danielvm/Documents/big-caixa
+export NEON_ORG_ID=org-hidden-truth-74284896   # obrigatório se o CLI pedir "What organization"
 bash scripts/neon-auth-setup.sh
 ```
 

@@ -1,6 +1,8 @@
 build
 .svelte-kit
 node_modules
+.agents
+.cursor
 package-lock.json
 test-results
 playwright-report

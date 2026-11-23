@@ -6,4 +6,4 @@ passthrough_paths = ["/api"]
 [deploy.env]
 VITE_BIGBASE_URL = "https://big-caixa.bigbase.click"
 # Preencher após: bash scripts/neon-auth-setup.sh
-VITE_NEON_AUTH_URL = ""
+VITE_NEON_AUTH_URL = "https://ep-lucky-dawn-bbvltogw.neonauth.c-15.us-east-1.aws.neon.tech/neondb/auth"

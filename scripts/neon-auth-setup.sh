@@ -3,24 +3,42 @@
 set -euo pipefail
 
 PROJECT_NAME="${NEON_PROJECT_NAME:-big-caixa}"
+NEON_ORG_ID="${NEON_ORG_ID:-}"
 SITE_URL="${SITE_URL:-https://big-caixa.bigbase.click}"
 LOCAL_DEV="${LOCAL_DEV_URL:-http://localhost:5173}"
 OUT="${1:-specs/neon-auth.env}"
+
+ORG_ARGS=()
+if [ -n "$NEON_ORG_ID" ]; then
+	ORG_ARGS=(--org-id "$NEON_ORG_ID")
+fi
 
 if ! command -v neonctl >/dev/null 2>&1; then
 	echo "ERRO: instale neonctl (npm i -g neonctl)" >&2
 	exit 1
 fi
 
-if ! neonctl projects list --output json >/tmp/neon-projects.json 2>/dev/null; then
+if ! neonctl projects list "${ORG_ARGS[@]}" --output json >/tmp/neon-projects.json 2>/dev/null; then
 	echo "ERRO: neonctl sem sessão. Rode: neonctl auth" >&2
 	exit 1
 fi
 
-PROJECT_ID=$(jq -r --arg n "$PROJECT_NAME" '.projects[] | select(.name == $n) | .id' /tmp/neon-projects.json)
+# neonctl devolve array na raiz ou { projects: [...] } conforme a versão
+PROJECT_ID=$(
+	jq -r --arg n "$PROJECT_NAME" '
+		(if type == "array" then . else .projects end)
+		| .[] | select(.name == $n) | .id
+	' /tmp/neon-projects.json
+)
 if [ -z "$PROJECT_ID" ] || [ "$PROJECT_ID" = "null" ]; then
+	if [ -z "$NEON_ORG_ID" ]; then
+		echo "ERRO: defina NEON_ORG_ID (org Daniel: org-hidden-truth-74284896) ou use: neonctl orgs list" >&2
+		exit 1
+	fi
 	echo "==> criar projeto Neon: $PROJECT_NAME"
-	PROJECT_ID=$(neonctl projects create --name "$PROJECT_NAME" --output json | jq -r '.project.id')
+	PROJECT_ID=$(
+		neonctl projects create --name "$PROJECT_NAME" "${ORG_ARGS[@]}" --output json | jq -r '.project.id // .id'
+	)
 fi
 echo "==> project_id=$PROJECT_ID"
 
