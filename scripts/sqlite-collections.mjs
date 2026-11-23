@@ -14,11 +14,17 @@ const QUERIES = {
 };
 
 export function sqliteCollections() {
+	/**
+	 * @param {import('node:http').IncomingMessage} req
+	 * @param {import('node:http').ServerResponse} res
+	 * @param {() => void} next
+	 */
 	return function sqliteCollectionsMiddleware(req, res, next) {
 		const url = req.url ?? '';
 		if (!url.startsWith('/api/collections/')) return next();
 		const name = url.slice('/api/collections/'.length).split('?')[0].split('/')[0];
-		const sql = QUERIES[name];
+		if (!Object.hasOwn(QUERIES, name)) return next();
+		const sql = QUERIES[/** @type {keyof typeof QUERIES} */ (name)];
 		if (!sql) return next();
 		try {
 			const db = new DatabaseSync(SQLITE_PATH, { readOnly: true });
