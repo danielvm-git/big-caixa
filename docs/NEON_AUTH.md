@@ -28,7 +28,7 @@ Saída: `specs/neon-auth.env` (ignorado pelo git).
 Copie `VITE_NEON_AUTH_URL` do Neon Console (Auth → connection URL do branch) para:
 
 - `.env` local (dev)
-- `bigbase.toml` → `[deploy.env].VITE_NEON_AUTH_URL`
+- `bigbase.toml` → `[env].VITE_NEON_AUTH_URL` (manifest v1; não use `[deploy.env]`)
 - Opcional: secret `VITE_NEON_AUTH_URL` no GitHub (variável, não secret, se preferir)
 
 ## 3. Produção Google OAuth

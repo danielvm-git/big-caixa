@@ -9,8 +9,9 @@ credenciais do BigBase e **não foram executados** (não há segredo neste ambie
 2. Criar o site `https://big-caixa.bigbase.click` (framework: static).
 3. Liberar CORS para a origem `https://big-caixa.bigbase.click` (auth e collections).
    Hoje a API responde `403 origin not allowed` (ver `specs/auth-probe.md`).
-   O deploy já envia `passthrough_paths: ["/api"]` e o build de produção usa
-   `VITE_BIGBASE_URL=$SITE_URL`, para o browser falar com `https://big-caixa.bigbase.click/api/...`.
+   O deploy já envia `passthrough_paths: ["/api"]` via GitHub Action.
+   Variáveis de build (`VITE_*`) ficam em `bigbase.toml` → secção `[env]` (manifest v1).
+   Em dev local, use `.env` a partir de `specs/neon-auth.env`.
 4. GitHub → Settings → Environments → `production`, criar os segredos (hoje o environment
    `production` existe mas **não tem secrets**):
    - `BIGBASE_SITE_ID` — ID do site `big-caixa` (MCP `list_sites` / `get_site`)

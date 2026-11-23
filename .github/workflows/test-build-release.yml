@@ -96,6 +96,8 @@ jobs:
         run: npm run build
         env:
           VITE_BIGBASE_URL: ${{ env.SITE_URL }}
+          # Pública; deve bater com bigbase.toml [env] para o build no BigBase
+          VITE_NEON_AUTH_URL: https://ep-lucky-dawn-bbvltogw.neonauth.c-15.us-east-1.aws.neon.tech/neondb/auth
 
       - name: Write deploy-meta
         run: |
