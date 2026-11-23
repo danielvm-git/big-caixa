@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Remove rodapés que ferramentas de IA injetam no corpo do commit.
+# O autor no git log continua sendo quem corre git commit (tua identidade).
+set -euo pipefail
+MSG_FILE="${1:?}"
+case "${2:-}" in
+message | merge | squash | commit) ;;
+*) exit 0 ;;
+esac
+tmp=$(mktemp)
+grep -viE '^co[- ]authored[- ]by:' "$MSG_FILE" |
+	grep -viE '^(made.with|generated.with).*(cursor|claude|copilot|openai)' ||
+	true >"$tmp"
+if [ -s "$tmp" ]; then
+	mv "$tmp" "$MSG_FILE"
+else
+	# Mantém a linha 1 (assunto) se o ficheiro ficar só com footers
+	head -1 "$MSG_FILE" >"$tmp"
+	mv "$tmp" "$MSG_FILE"
+fi

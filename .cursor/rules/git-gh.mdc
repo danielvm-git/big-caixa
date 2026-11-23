@@ -1,0 +1,11 @@
+---
+description: Git e GitHub neste repo — usar identidade do utilizador via gh
+alwaysApply: true
+---
+
+# Git / GitHub (big-caixa)
+
+- **Autor**: commits com a identidade git já configurada (`danielvm-git` / e-mail pessoal). Mensagens Conventional Commits, assunto ≤ 72 chars, sem `Co-authored-by`.
+- **Push / PR / issues / Actions**: usar `gh` (sessão `danielvm-git`), não inventar tokens.
+- **Hooks**: `core.hooksPath=.githooks` após `bash scripts/setup-git-hooks.sh`.
+- **Push para `main`**: permitido neste repo solo quando o utilizador pedir deploy; ver `docs/GIT_HOOKS.md` para agente vs Cursor RTK.

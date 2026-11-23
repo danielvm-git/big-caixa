@@ -3,6 +3,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SQLITE_PATH="${SQLITE_PATH:-$HOME/Documents/My_Finances/livro-caixa.sqlite}"
 cd "$ROOT"
+if [ -d "$ROOT/.githooks" ]; then
+	bash "$ROOT/scripts/setup-git-hooks.sh"
+fi
 mkdir -p logs
 if [ -f package-lock.json ]; then
   npm ci

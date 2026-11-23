@@ -24,13 +24,12 @@ credenciais do BigBase e **não foram executados** (não há segredo neste ambie
 **BigBase + manifest:** o host corre `build.command` com `exec` (sem shell). Não use
 `npm ci && npm run build` no TOML — só corre `npm ci`. Use `npm run build:bigbase` no
 manifest (script npm com `&&` interno).
-   O `deploy.yml` baixa `deploy-meta.json`, chama a action `@v1` e faz 8 tentativas de health.
-6. Conferir:
+O `deploy.yml` baixa `deploy-meta.json`, chama a action `@v1` e faz 8 tentativas de health. 6. Conferir:
 
-   ```bash
-   SITE_URL=https://big-caixa.bigbase.click bash scripts/health.sh
-   curl -s https://big-caixa.bigbase.click/health.json   # version e sha do push
-   ```
+```bash
+SITE_URL=https://big-caixa.bigbase.click bash scripts/health.sh
+curl -s https://big-caixa.bigbase.click/health.json   # version e sha do push
+```
 
 7. Popular as collections (`mes`, `sankey`, `compra`, …) a partir do SQLite:
 

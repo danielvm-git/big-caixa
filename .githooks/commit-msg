@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Estilo: Conventional Commits. Autoria: sem atribuição explícita a IA no histórico.
+set -euo pipefail
+MSG_FILE="${1:?}"
+SUBJECT=$(head -1 "$MSG_FILE")
+
+if echo "$SUBJECT" | grep -qE '^(Merge branch|Merge pull request|fixup!|squash!|chore\(release\):)'; then
+	exit 0
+fi
+
+CC='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-zA-Z0-9_.-]+\))?!?: .+$'
+if ! echo "$SUBJECT" | grep -qE "$CC"; then
+	echo "commit-msg: mensagem fora de Conventional Commits: $SUBJECT" >&2
+	exit 1
+fi
+
+if [ "${#SUBJECT}" -gt 72 ]; then
+	echo "commit-msg: assunto com ${#SUBJECT} caracteres (máx. 72)" >&2
+	exit 1
+fi
+
+if grep -qiE '^co[- ]authored[- ]by:' "$MSG_FILE"; then
+	echo "commit-msg: Co-authored-by proibido no histórico (atribuição humana apenas)" >&2
+	exit 1
+fi
+
+if grep -qiE '(generated with|written by|assisted by).*(claude|codex|gemini|copilot|gpt|anthropic|openai|cursor|composer)' "$MSG_FILE"; then
+	echo "commit-msg: rodapé de atribuição a IA proibido" >&2
+	exit 1
+fi
+
+exit 0
