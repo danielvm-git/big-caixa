@@ -1,9 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 test('entra, abre Hoje, filtra um mês e abre uma compra', async ({ page }) => {
-	await page.goto('/login');
-	await page.getByLabel('Senha').fill('test');
-	await page.getByRole('button', { name: 'Entrar' }).click();
+	await page.goto('/login/');
+	await page.getByRole('button', { name: 'Entrar (só e2e)' }).click();
 	await expect(page).toHaveURL(/hoje/);
 	await expect(page.getByRole('heading', { name: 'Hoje' })).toBeVisible();
 

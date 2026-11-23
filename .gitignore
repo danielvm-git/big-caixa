@@ -24,6 +24,7 @@ Thumbs.db
 *.pdf
 logs/
 deploy-meta.json
+specs/neon-auth.env
 .data/
 
 # Vite

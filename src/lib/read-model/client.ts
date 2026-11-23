@@ -2,12 +2,12 @@ import { fixtureCompras, fixtureMes, fixtureSankey } from './fixtures';
 import type { CompraDoc, MesDoc, SankeyDoc } from './types';
 import { getSession } from '$lib/auth/session';
 
-const BASE = import.meta.env.VITE_BIGBASE_URL ?? 'https://bigbase.click';
+import { bigbaseBase } from '$lib/bigbase-url';
 
 async function listCollection<T>(name: string): Promise<T[]> {
 	const token = getSession()?.token;
 	if (!token) return [];
-	const res = await fetch(`${BASE}/api/collections/${name}?limit=1000`, {
+	const res = await fetch(`${bigbaseBase()}/api/collections/${name}?limit=1000`, {
 		headers: { Authorization: `Bearer ${token}` }
 	});
 	if (!res.ok) throw new Error(`${name}: ${res.status}`);

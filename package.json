@@ -5,7 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
-		"build": "vite build && node scripts/write-health.mjs",
+		"build": "vite build && node scripts/write-health.mjs && node scripts/static-fileserver-layout.mjs",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"lint": "prettier --check . && eslint .",
@@ -42,5 +42,8 @@
 	"description": "Livro-caixa da casa: casca estática SvelteKit sobre o BigBase",
 	"engines": {
 		"node": ">=22"
+	},
+	"dependencies": {
+		"@neondatabase/auth": "^0.7.0-beta"
 	}
 }

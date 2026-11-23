@@ -9,8 +9,8 @@ npm ci
 npm run dev
 ```
 
-Em `dev`, o login cai em sessão mock se a API retornar CORS bloqueado (ver `specs/auth-probe.md`).
-`VITE_AUTH_MODE=mock` (só e2e) simula o login; produção usa `bigbase`.
+Login: **Google** via [Neon Auth](docs/NEON_AUTH.md) (`neonctl` + `scripts/neon-auth-setup.sh`).
+`VITE_AUTH_MODE=mock` (só e2e) usa o botão de mock na tela de login.
 
 E2E: `npx playwright install chromium && npm run test:e2e` (o webServer faz build em modo mock e `preview` na 4173).
 

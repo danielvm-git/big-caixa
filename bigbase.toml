@@ -1,0 +1,9 @@
+[deploy]
+app_type = "static"
+build_command = "npm ci && npm run build"
+passthrough_paths = ["/api"]
+
+[deploy.env]
+VITE_BIGBASE_URL = "https://big-caixa.bigbase.click"
+# Preencher após: bash scripts/neon-auth-setup.sh
+VITE_NEON_AUTH_URL = ""

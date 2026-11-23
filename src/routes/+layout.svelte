@@ -3,7 +3,8 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { requireSession } from '$lib/auth/guard';
-	import { initSessionContext } from '$lib/auth/session';
+	import { fetchNeonSession } from '$lib/auth/neon';
+	import { initSessionContext, setSession } from '$lib/auth/session';
 	import { log } from '$lib/log';
 	import Nav from '$lib/ui/Nav.svelte';
 	import { filtros, setMes, togglePrivacidade, toggleTema } from '$lib/filters';
@@ -12,10 +13,14 @@
 
 	initSessionContext();
 
-	const hideNav = $derived(page.url.pathname === '/login');
+	const hideNav = $derived(page.url.pathname.startsWith('/login'));
 
-	onMount(() => {
-		if (!hideNav) void requireSession();
+	onMount(async () => {
+		if (!hideNav) {
+			const neon = await fetchNeonSession();
+			if (neon) setSession(neon);
+			void requireSession();
+		}
 		log('info', 'layout_mount', { route: page.url.pathname });
 	});
 

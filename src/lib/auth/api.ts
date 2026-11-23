@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_BIGBASE_URL ?? 'https://bigbase.click';
+import { bigbaseBase } from '$lib/bigbase-url';
 
 /** `mock` só em dev e e2e (build com VITE_AUTH_MODE=mock). Produção usa `bigbase`. */
 export const AUTH_MODE: 'bigbase' | 'mock' =
@@ -8,7 +8,7 @@ export async function login(email: string, password: string): Promise<{ token: s
 	if (AUTH_MODE === 'mock') return { token: 'mock-token' };
 	let res: Response;
 	try {
-		res = await fetch(`${BASE}/api/auth/login`, {
+		res = await fetch(`${bigbaseBase()}/api/auth/login`, {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
 			body: JSON.stringify({ email, password })
@@ -27,7 +27,7 @@ export async function login(email: string, password: string): Promise<{ token: s
 }
 
 export async function me(token: string): Promise<{ email: string }> {
-	const res = await fetch(`${BASE}/api/auth/me`, {
+	const res = await fetch(`${bigbaseBase()}/api/auth/me`, {
 		headers: { Authorization: `Bearer ${token}` }
 	});
 	if (!res.ok) throw new Error(`me ${res.status}`);
