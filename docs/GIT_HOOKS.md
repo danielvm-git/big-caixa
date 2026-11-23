@@ -2,10 +2,10 @@
 
 ## O que fica no repo
 
-| Hook | Função |
-| ---- | ------ |
-| `prepare-commit-msg` | Remove `Co-authored-by` / rodapés de IA **antes** do commit gravar |
-| `commit-msg` | Conventional Commits, assunto ≤ 72 chars, **proíbe** co-author e texto “generated with … AI” |
+| Hook                 | Função                                                                                       |
+| -------------------- | -------------------------------------------------------------------------------------------- |
+| `prepare-commit-msg` | Remove `Co-authored-by` / rodapés de IA **antes** do commit gravar                           |
+| `commit-msg`         | Conventional Commits, assunto ≤ 72 chars, **proíbe** co-author e texto “generated with … AI” |
 
 Ativar (uma vez por clone):
 
@@ -30,7 +30,7 @@ Duas camadas:
 
 ### Afrouxar a camada Cursor (para o agente commitar)
 
-No **Cursor Settings**, procura por *co-author*, *attribution* ou *git* no contexto do **Agent** e desliga a opção que adiciona **Co-authored-by** (ou equivalente) aos commits do agente.
+No **Cursor Settings**, procura por _co-author_, _attribution_ ou _git_ no contexto do **Agent** e desliga a opção que adiciona **Co-authored-by** (ou equivalente) aos commits do agente.
 
 Alternativas:
 
