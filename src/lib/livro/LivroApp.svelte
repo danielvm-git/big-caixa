@@ -236,8 +236,7 @@
 							<b>Quem deve a quem</b>
 							<span style="font-size:13px;color:var(--mut)">A receber:</span>
 							<b style={v.bl}>{v.hojeDevemAReceber}</b>
-							<button type="button" onclick={v.goDevem} style={v.btn}>Ver todas as contas →</button
-							>
+							<button type="button" onclick={v.goDevem} style={v.btn}>Ver todas as contas →</button>
 						</div>{/if}
 					<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">
 						{#each v.scopes as sc}<div style={v.card}>
@@ -322,7 +321,9 @@
 						<div style="color:var(--mut);font-size:14px">{v.visaoNote}</div>
 					</div>
 					{#if v.ledgerError}
-						<div style={v.card}>Não foi possível ler o livro. Confira a sessão e a ligação ao Postgres.</div>
+						<div style={v.card}>
+							Não foi possível ler o livro. Confira a sessão e a ligação ao Postgres.
+						</div>
 					{:else if !v.visaoRows.length}
 						<div style={v.card}>Sem dados de ano no livro.</div>
 					{:else}
@@ -344,9 +345,13 @@
 											style="display:grid;grid-template-columns:210px repeat(12,minmax(72px,1fr)) 92px 104px;gap:6px;padding:7px 14px;border-top:1px solid var(--ln);font-size:{r.fs};font-weight:{r.fw};background:{r.bg};font-variant-numeric:tabular-nums;width:100%;text-align:left;border-left:0;border-right:0;cursor:pointer;color:var(--ink)"
 										>
 											<span style="padding-left:{r.pl}">{r.l}</span>
-											{#each r.v as c}<span style="text-align:right;color:{c.mut
-													? 'var(--mut)'
-													: 'var(--ink)'};{v.bl}">{c.t}</span>{/each}
+											{#each r.v as c}<span
+													style="text-align:right;color:{c.mut
+														? 'var(--mut)'
+														: 'var(--ink)'};{v.bl}"
+												>
+													{c.t}
+												</span>{/each}
 											<span style="text-align:right;color:var(--mut);{v.bl}">{r.m}</span>
 											<span style="text-align:right;{v.bl}">{r.t}</span>
 										</button>
@@ -355,9 +360,13 @@
 											style="display:grid;grid-template-columns:210px repeat(12,minmax(72px,1fr)) 92px 104px;gap:6px;padding:7px 14px;border-top:1px solid var(--ln);font-size:{r.fs};font-weight:{r.fw};background:{r.bg};font-variant-numeric:tabular-nums"
 										>
 											<span style="padding-left:{r.pl}">{r.l}</span>
-											{#each r.v as c}<span style="text-align:right;color:{c.mut
-													? 'var(--mut)'
-													: 'var(--ink)'};{v.bl}">{c.t}</span>{/each}
+											{#each r.v as c}<span
+													style="text-align:right;color:{c.mut
+														? 'var(--mut)'
+														: 'var(--ink)'};{v.bl}"
+												>
+													{c.t}
+												</span>{/each}
 											<span style="text-align:right;color:var(--mut);{v.bl}">{r.m}</span>
 											<span style="text-align:right;{v.bl}">{r.t}</span>
 										</div>
@@ -373,9 +382,13 @@
 				<div style="max-width:1180px;display:flex;flex-direction:column;gap:14px;animation:up .3s">
 					<div style="font-size:13px;color:var(--mut)">
 						{v.fluxoVinculosNota}
-						<button type="button" onclick={v.goDevem} style="border:0;background:0;color:var(--ink);cursor:pointer;text-decoration:underline"
-							>Quem deve a quem</button
+						<button
+							type="button"
+							onclick={v.goDevem}
+							style="border:0;background:0;color:var(--ink);cursor:pointer;text-decoration:underline"
 						>
+							Quem deve a quem
+						</button>
 					</div>
 					<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
 						<h1 style="font:600 28px 'Source Serif 4',serif;margin:0;flex:1">
@@ -903,9 +916,9 @@
 										? 'Lugares da rotina'
 										: 'Como aparecem no extrato'}
 							</p>
-							<button type="button" onclick={v.wzStep < 2 ? v.wzNext : v.wzDone} style={v.btnP}
-								>{v.wzStep < 2 ? 'Continuar' : 'Concluir'}</button
-							>
+							<button type="button" onclick={v.wzStep < 2 ? v.wzNext : v.wzDone} style={v.btnP}>
+								{v.wzStep < 2 ? 'Continuar' : 'Concluir'}
+							</button>
 						</div>
 					{/if}
 				</div>
@@ -933,7 +946,9 @@
 
 			{#if v.s.pessoa && v.pessoaDet}
 				<div style="max-width:900px;display:flex;flex-direction:column;gap:14px;animation:up .3s">
-					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">{v.pessoaDet.apelido || v.pessoaDet.nome}</h1>
+					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">
+						{v.pessoaDet.apelido || v.pessoaDet.nome}
+					</h1>
 					<div style={v.card}>
 						<div style="font-size:14px;color:var(--mut)">{v.pessoaDet.relacao}</div>
 						{#if v.pessoaDet.aliases?.length}
@@ -963,7 +978,9 @@
 					{#if v.emps.length}{#each v.emps as e}<div style={v.card}>
 								<div style="font:600 18px 'Source Serif 4',serif">{e.n}</div>
 								<div style="font-size:13px;color:var(--mut)">{e.rel} · {e.reg}</div>
-								<div style="font-size:13px;margin-top:8px">Salário: <b style={v.bl}>{e.sal}</b></div>
+								<div style="font-size:13px;margin-top:8px">
+									Salário: <b style={v.bl}>{e.sal}</b>
+								</div>
 							</div>{/each}{:else}<div style={v.card}>{v.casaCadastroFalta}</div>{/if}
 				</div>
 			{/if}
@@ -1293,9 +1310,9 @@
 					Parcelas
 				</span><span>{v.pn.parc} · pago {v.pn.pago}</span><span style="color:var(--mut)">
 					Origem
-				</span><span>{v.pn.orig}</span><span style="color:var(--mut)">Para quem</span><span
-					>{v.pn.paraQuem}</span
-				>
+				</span><span>{v.pn.orig}</span><span style="color:var(--mut)">Para quem</span><span>
+					{v.pn.paraQuem}
+				</span>
 			</div>
 			<div style="background:var(--sf2);border-radius:10px;padding:10px 12px;font-size:13px">
 				<i class="ph ph-envelope-simple"></i> <b>Nota do e-mail</b><br /><span
@@ -1440,9 +1457,9 @@
 							Rever empréstimos e trocas do mês
 						</h1>
 						<p style="color:var(--mut);font-size:14px">
-							Confira vínculos abertos em <button type="button" onclick={v.goDevem} style={v.btn}
-								>Quem deve a quem</button
-							>.
+							Confira vínculos abertos em <button type="button" onclick={v.goDevem} style={v.btn}>
+								Quem deve a quem
+							</button>.
 						</p>{/if}
 					{#if v.sample && v.cs.s4}<h1 style="font:600 32px 'Source Serif 4',serif;margin:0">
 							Como foi outubro?

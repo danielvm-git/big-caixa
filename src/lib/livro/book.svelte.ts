@@ -709,9 +709,7 @@ export class Book {
 				return true;
 			})
 			.map((c) => {
-				const pessoa =
-					c.pessoa_id &&
-					s.ledger.pessoas.find((p) => p.id === c.pessoa_id);
+				const pessoa = c.pessoa_id && s.ledger.pessoas.find((p) => p.id === c.pessoa_id);
 				const pn = pessoa ? pessoa.apelido || pessoa.nome : null;
 				return {
 					id: c.id,

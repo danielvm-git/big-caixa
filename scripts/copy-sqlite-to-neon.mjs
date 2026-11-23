@@ -4,8 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import pg from 'pg';
 
 const PROJECT = 'gentle-voice-24390268';
-const branches =
-	process.argv.length > 2 ? process.argv.slice(2) : ['production', 'staging'];
+const branches = process.argv.length > 2 ? process.argv.slice(2) : ['production', 'staging'];
 const sqlitePath =
 	process.env.SQLITE_PATH ?? `${process.env.HOME}/Documents/My_Finances/livro-caixa.sqlite`;
 

@@ -6,8 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const PROJECT = 'gentle-voice-24390268';
-const branches =
-	process.argv.length > 2 ? process.argv.slice(2) : ['production', 'staging'];
+const branches = process.argv.length > 2 ? process.argv.slice(2) : ['production', 'staging'];
 const sqlPath = join(dirname(fileURLToPath(import.meta.url)), 'sql/caixa-v2-migration.sql');
 const sql = rf(sqlPath, 'utf8');
 

@@ -73,7 +73,15 @@ async function handle(body) {
 			   circulo = EXCLUDED.circulo,
 			   aniversario = EXCLUDED.aniversario,
 			   visibilidade = EXCLUDED.visibilidade`,
-			[id, nome, relacao ?? null, apelido ?? null, circulo ?? null, aniversario ?? null, visibilidade]
+			[
+				id,
+				nome,
+				relacao ?? null,
+				apelido ?? null,
+				circulo ?? null,
+				aniversario ?? null,
+				visibilidade
+			]
 		);
 		if (Array.isArray(body.aliases)) {
 			await pool.query(`DELETE FROM caixa.dim_pessoa_alias WHERE pessoa_id = $1`, [id]);
