@@ -2,9 +2,9 @@
 	import '../app.css';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
-	import { requireSession } from '$lib/auth/guard';
 	import { fetchNeonSession } from '$lib/auth/neon';
-	import { initSessionContext, setSession } from '$lib/auth/session';
+	import { getSession, initSessionContext, setSession } from '$lib/auth/session';
+	import { goto } from '$app/navigation';
 	import { log } from '$lib/log';
 	import Nav from '$lib/ui/Nav.svelte';
 	import SiteFooter from '$lib/ui/SiteFooter.svelte';
@@ -15,13 +15,18 @@
 	initSessionContext();
 
 	const hideNav = $derived(page.url.pathname.startsWith('/login'));
+	let pronta = $state(false);
 
 	onMount(async () => {
 		if (!hideNav) {
 			const neon = await fetchNeonSession();
 			if (neon) setSession(neon);
-			void requireSession();
+			if (!getSession()) {
+				await goto('/login/');
+				return;
+			}
 		}
+		pronta = true;
 		log('info', 'layout_mount', { route: page.url.pathname });
 	});
 
@@ -37,7 +42,7 @@
 		</div>
 		<SiteFooter />
 	</div>
-{:else}
+{:else if pronta}
 	<div class="shell">
 		<Nav />
 		<div class="main">
@@ -58,9 +63,14 @@
 			<SiteFooter />
 		</div>
 	</div>
+{:else}
+	<p class="boot">Carregando…</p>
 {/if}
 
 <style>
+	.boot {
+		padding: 24px;
+	}
 	.shell {
 		display: flex;
 		min-height: 100vh;

@@ -15,22 +15,16 @@ function resolveNeonAuthUrl(): { url: string | undefined; source: 'vite' | 'fall
 const resolved = resolveNeonAuthUrl();
 const authUrl = resolved.url;
 
-// #region agent log
-if (typeof fetch !== 'undefined') {
-	fetch('http://127.0.0.1:7763/ingest/caee9a34-7e8d-4177-870b-0ce591c4a815', {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '15fadb' },
-		body: JSON.stringify({
-			sessionId: '15fadb',
-			hypothesisId: 'H1',
-			location: 'neon.ts:resolve',
-			message: 'neon auth url resolved',
-			data: { source: resolved.source, urlLen: authUrl?.length ?? 0, prod: import.meta.env.PROD },
-			timestamp: Date.now()
-		})
-	}).catch(() => {});
+function isJwt(token: string | undefined): token is string {
+	return !!token && token.split('.').length === 3;
 }
-// #endregion
+
+async function jwtFromTokenEndpoint(base: string): Promise<string | null> {
+	const res = await fetch(`${base.replace(/\/$/, '')}/token`, { credentials: 'include' });
+	if (!res.ok) return null;
+	const body = (await res.json()) as { token?: string };
+	return isJwt(body.token) ? body.token : null;
+}
 
 /** Cliente Neon Auth (Better Auth hospedado). Ausente em e2e mock sem URL. */
 export const neonAuth =
@@ -47,13 +41,12 @@ export async function fetchNeonSession(): Promise<{
 	token: string;
 	email: string;
 } | null> {
-	if (!neonAuth) return null;
+	if (!neonAuth || !authUrl) return null;
 	const { data } = await neonAuth.getSession();
-	if (!data?.session || !data.user?.email) return null;
-	const token =
-		(data.session as { token?: string }).token ??
-		(data as { session?: { accessToken?: string } }).session?.accessToken ??
-		'neon-session';
+	if (!data?.user?.email) return null;
+	const sessionToken = (data.session as { token?: string } | undefined)?.token;
+	const token = isJwt(sessionToken) ? sessionToken : await jwtFromTokenEndpoint(authUrl);
+	if (!token) return null;
 	return { token, email: data.user.email };
 }
 

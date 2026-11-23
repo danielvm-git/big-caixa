@@ -9,7 +9,7 @@ function caixaBase(): string {
 
 function useFixtures(): boolean {
 	const token = getSession()?.token;
-	return !token || token === 'mock-token' || token.split('.').length !== 3;
+	return !token || token === 'mock-token';
 }
 
 async function read<T>(colecao: 'mes' | 'sankey' | 'compra', periodo?: string): Promise<T[]> {
