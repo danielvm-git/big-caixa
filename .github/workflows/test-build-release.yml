@@ -151,3 +151,72 @@ jobs:
           GIT_AUTHOR_EMAIL: big-release-bot@danielvm-git.github.io
           GIT_COMMITTER_NAME: big-release-bot
           GIT_COMMITTER_EMAIL: big-release-bot@danielvm-git.github.io
+
+  # Deploy só após build verde na main (sem workflow_run — evita workflow Deploy "skipped" quando o CI falha).
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [build]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    environment: production
+    permissions:
+      contents: read
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      - name: Download deploy-meta artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: deploy-meta
+          path: deploy-meta
+
+      - name: Verify deploy-meta artifact
+        id: meta
+        run: |
+          if [ ! -s deploy-meta/deploy-meta.json ]; then
+            echo "::error::deploy-meta artifact missing or empty"
+            exit 1
+          fi
+          REF=$(jq -r '.sha' deploy-meta/deploy-meta.json)
+          APP_TYPE=$(jq -r '.app_type' deploy-meta/deploy-meta.json)
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          echo "app_type=$APP_TYPE" >> "$GITHUB_OUTPUT"
+          echo "Deploy metadata: $(cat deploy-meta/deploy-meta.json)"
+
+      - name: Deploy to BigBase
+        uses: danielvm-git/.github/actions/bigbase-deploy@9c56ac10c629f3baa110ddb19136579e3c90d690 # v1
+        with:
+          site_id: ${{ secrets.BIGBASE_SITE_ID }}
+          app_type: ${{ steps.meta.outputs.app_type }}
+          site_url: ${{ env.SITE_URL }}
+          deploy_token: ${{ secrets.BIGBASE_DEPLOY_TOKEN }}
+          ref: ${{ steps.meta.outputs.ref }}
+          branch: main
+          passthrough_paths: '["/api"]'
+          skip_health_check: true
+
+      - name: Health check (HTTP + health.json sha)
+        env:
+          EXPECTED_SHA: ${{ steps.meta.outputs.ref }}
+        run: |
+          SITE="${{ env.SITE_URL }}"
+          ATTEMPTS=24
+          INTERVAL=15
+          for i in $(seq 1 "$ATTEMPTS"); do
+            STATUS=$(curl -s -o /tmp/hc-body -w '%{http_code}' "${SITE}/health.json" || echo "000")
+            if [ "$STATUS" = "200" ]; then
+              ACTUAL=$(jq -r '.sha // empty' /tmp/hc-body)
+              if [ -n "$ACTUAL" ] && { [ "$ACTUAL" = "$EXPECTED_SHA" ] || [ "${ACTUAL:0:7}" = "${EXPECTED_SHA:0:7}" ]; }; then
+                echo "Site LIVE — health.json sha matches deploy ref (${EXPECTED_SHA:0:7})"
+                jq . /tmp/hc-body
+                exit 0
+              fi
+              echo "Attempt $i/$ATTEMPTS: HTTP 200 but sha=$ACTUAL (want ${EXPECTED_SHA:0:7}), BigBase may still be building..."
+            else
+              echo "Attempt $i/$ATTEMPTS: /health.json HTTP $STATUS, waiting ${INTERVAL}s..."
+            fi
+            sleep "$INTERVAL"
+          done
+          echo "::error::Production health.json never matched ref ${EXPECTED_SHA} (build may have failed on BigBase host)"
+          exit 1

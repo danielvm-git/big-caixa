@@ -19,12 +19,18 @@ credenciais do BigBase e **não foram executados** (não há segredo neste ambie
 
    Passo a passo BigBase MCP: [discussão 192](https://github.com/danielvm-git/bigbase/discussions/192).
 
-5. Push na `main` dispara `Test Build Release` (release via **big-release** / `.big-release.yml`) e, se verde, `Deploy`.
+5. Push na `main` dispara só **`Test Build Release`**: test → build → release (paralelo possível) e **deploy** (job `deploy`, só se `build` passou — não existe workflow `Deploy` separado nem `workflow_run`).
+
+**Dois builds, um gate:** o GitHub Actions corre lint/test/build para validar o push e grava `deploy-meta.json` (sha). O job `deploy` só chama a API BigBase com esse sha; o **host** clona o repo **big-caixa** (não o monólito BigBase) e corre `npm run build:bigbase` conforme `bigbase.toml`. O artefato `build/` do CI **não** é enviado — produção é sempre o build remoto no BigBase.
+
+**Webhook GitHub → BigBase:** o push só atualiza o mirror do repo; **não** dispara deploy sem a API (`bb_dep_`). Deploy acidental “à toa” costuma ser workflow `Deploy` antigo com `workflow_run` (runs `skipped`) ou deploy manual na UI.
 
 **BigBase + manifest:** o host corre `build.command` com `exec` (sem shell). Não use
 `npm ci && npm run build` no TOML — só corre `npm ci`. Use `npm run build:bigbase` no
 manifest (script npm com `&&` interno).
-O `deploy.yml` baixa `deploy-meta.json`, chama a action `@v1` e faz 8 tentativas de health. 6. Conferir:
+O job `deploy` baixa `deploy-meta.json`, chama a action `@v1` e espera até **6 min** que `health.json` em produção tenha o mesmo `sha` do push (não basta HTTP 200 no `/`).
+
+6. Conferir:
 
 ```bash
 SITE_URL=https://big-caixa.bigbase.click bash scripts/health.sh
