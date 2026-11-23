@@ -8,6 +8,25 @@
 	let err = $state('');
 
 	onMount(async () => {
+		// #region agent log
+		fetch('http://127.0.0.1:7763/ingest/caee9a34-7e8d-4177-870b-0ce591c4a815', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '15fadb' },
+			body: JSON.stringify({
+				sessionId: '15fadb',
+				hypothesisId: 'H5',
+				location: 'login/+page.svelte:onMount',
+				message: 'login mount',
+				data: {
+					hasViteUrl:
+						typeof import.meta.env.VITE_NEON_AUTH_URL === 'string' &&
+						import.meta.env.VITE_NEON_AUTH_URL.length > 0,
+					prod: import.meta.env.PROD
+				},
+				timestamp: Date.now()
+			})
+		}).catch(() => {});
+		// #endregion
 		const s = await fetchNeonSession();
 		if (s) {
 			setSession(s);

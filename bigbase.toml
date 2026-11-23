@@ -2,7 +2,8 @@ version = 1
 framework = "static"
 
 [build]
-command = "npm ci && npm run build"
+# BigBase: exec sem shell — use um único `npm run` (ver docs/DEPLOY.md).
+command = "npm run build:bigbase"
 output = "build"
 
 # Obrigatório no schema do manifest; sites estáticos são servidos pelo FileServer.

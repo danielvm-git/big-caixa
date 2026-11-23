@@ -20,6 +20,10 @@ credenciais do BigBase e **não foram executados** (não há segredo neste ambie
    Passo a passo BigBase MCP: [discussão 192](https://github.com/danielvm-git/bigbase/discussions/192).
 
 5. Push na `main` dispara `Test Build Release` (release via **big-release** / `.big-release.yml`) e, se verde, `Deploy`.
+
+**BigBase + manifest:** o host corre `build.command` com `exec` (sem shell). Não use
+`npm ci && npm run build` no TOML — só corre `npm ci`. Use `npm run build:bigbase` no
+manifest (script npm com `&&` interno).
    O `deploy.yml` baixa `deploy-meta.json`, chama a action `@v1` e faz 8 tentativas de health.
 6. Conferir:
 
