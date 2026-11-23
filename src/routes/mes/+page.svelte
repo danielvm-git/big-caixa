@@ -6,13 +6,21 @@
 	import type { MesDoc } from '$lib/read-model/types';
 
 	let rows = $state<MesDoc[]>([]);
+	let erro = $state(false);
 
 	onMount(async () => {
-		rows = await loadMes(get(filtros).mes);
+		try {
+			rows = await loadMes(get(filtros).mes);
+		} catch {
+			erro = true;
+		}
 	});
 </script>
 
 <h1 class="serif">Mês e categorias</h1>
+{#if erro}
+	<p>Não foi possível ler o livro.</p>
+{/if}
 <div class="card">
 	{#each rows as r}
 		<div class="row">

@@ -51,7 +51,7 @@
 </script>
 
 <div class="login">
-	<h1 class="serif">Livro-caixa</h1>
+	<h1 class="serif">big-caixa</h1>
 	<p class="mut">As contas da nossa casa.</p>
 
 	{#if err}<p class="err">{err}</p>{/if}
@@ -69,7 +69,6 @@
 
 <style>
 	.login {
-		min-height: 100vh;
 		display: flex;
 		flex-direction: column;
 		justify-content: center;

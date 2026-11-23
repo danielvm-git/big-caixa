@@ -7,10 +7,15 @@
 	import type { MesDoc } from '$lib/read-model/types';
 
 	let rows = $state<MesDoc[]>([]);
+	let erro = $state(false);
 
 	onMount(async () => {
 		const t0 = performance.now();
-		rows = await loadMes(get(filtros).mes);
+		try {
+			rows = await loadMes(get(filtros).mes);
+		} catch {
+			erro = true;
+		}
 		log('info', 'screen_view', {
 			route: '/hoje',
 			durationMs: Math.round(performance.now() - t0),
@@ -21,9 +26,12 @@
 
 <h1 class="serif">Hoje</h1>
 <p class="mut">Período {$filtros.mes}</p>
+{#if erro}
+	<p>Não foi possível ler o livro.</p>
+{/if}
 <div class="grid">
 	<div class="card">
-		<div class="mut">Custo de vida (amostra)</div>
+		<div class="mut">Custo de vida</div>
 		<div class="big serif">
 			R$ {rows
 				.reduce((a, r) => a + r.custo_recorrente + r.custo_extraordinario, 0)

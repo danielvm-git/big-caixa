@@ -46,7 +46,7 @@
 </script>
 
 <nav class="nav">
-	<div class="brand serif">Livro-caixa</div>
+	<div class="brand serif">big-caixa</div>
 	{#each groups as g}
 		{#if g.subs}
 			<div class="group">

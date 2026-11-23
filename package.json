@@ -40,11 +40,13 @@
 		"vite": "^8.3.8",
 		"vitest": "^5.1.1"
 	},
-	"description": "Livro-caixa da casa: casca estática SvelteKit sobre o BigBase",
+	"description": "big-caixa: casca estática SvelteKit sobre o BigBase",
 	"engines": {
 		"node": ">=22"
 	},
 	"dependencies": {
-		"@neondatabase/auth": "^0.7.0-beta"
+		"@neondatabase/auth": "^0.7.0-beta",
+		"jose": "^6.2.18",
+		"pg": "^8.23.1"
 	}
 }

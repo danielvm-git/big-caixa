@@ -7,6 +7,7 @@
 	import { initSessionContext, setSession } from '$lib/auth/session';
 	import { log } from '$lib/log';
 	import Nav from '$lib/ui/Nav.svelte';
+	import SiteFooter from '$lib/ui/SiteFooter.svelte';
 	import { filtros, setMes, togglePrivacidade, toggleTema } from '$lib/filters';
 
 	let { children } = $props();
@@ -30,7 +31,12 @@
 </script>
 
 {#if hideNav}
-	{@render children()}
+	<div class="login-frame">
+		<div class="login-body">
+			{@render children()}
+		</div>
+		<SiteFooter />
+	</div>
 {:else}
 	<div class="shell">
 		<Nav />
@@ -49,6 +55,7 @@
 			<main class:blur-private={$filtros.privacidade}>
 				{@render children()}
 			</main>
+			<SiteFooter />
 		</div>
 	</div>
 {/if}
@@ -58,9 +65,24 @@
 		display: flex;
 		min-height: 100vh;
 	}
+	.login-frame {
+		display: flex;
+		flex-direction: column;
+		min-height: 100vh;
+	}
+	.login-body {
+		flex: 1;
+		display: flex;
+		min-height: 0;
+	}
+	.login-body :global(.login) {
+		flex: 1;
+		min-height: 0;
+	}
 	.main {
 		flex: 1;
 		min-width: 0;
+		min-height: 100vh;
 		display: flex;
 		flex-direction: column;
 	}
@@ -81,6 +103,7 @@
 	}
 	main {
 		flex: 1;
+		min-height: 0;
 		padding: 24px;
 		overflow: auto;
 	}

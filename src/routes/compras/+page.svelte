@@ -5,11 +5,14 @@
 
 	let rows = $state<CompraDoc[]>([]);
 	let loading = $state(true);
+	let erro = $state(false);
 	let selected = $state<CompraDoc | null>(null);
 
 	onMount(async () => {
 		try {
 			rows = await loadCompras();
+		} catch {
+			erro = true;
 		} finally {
 			loading = false;
 		}
@@ -21,6 +24,9 @@
 </script>
 
 <h1 class="serif">Compras e lançamentos</h1>
+{#if erro}
+	<p>Não foi possível ler o livro.</p>
+{/if}
 {#if loading}
 	<p>Carregando…</p>
 {:else if rows.length === 0}

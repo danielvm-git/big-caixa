@@ -7,13 +7,21 @@
 
 	let links = $state<SankeyDoc[]>([]);
 	let simple = $state(true);
+	let erro = $state(false);
 
 	onMount(async () => {
-		links = await loadSankey(get(filtros).mes);
+		try {
+			links = await loadSankey(get(filtros).mes);
+		} catch {
+			erro = true;
+		}
 	});
 </script>
 
 <h1 class="serif">Para onde foi o dinheiro</h1>
+{#if erro}
+	<p>Não foi possível ler o livro.</p>
+{/if}
 <button class="btn" type="button" onclick={() => (simple = !simple)}>
 	{simple ? 'Ver Sankey' : 'Versão simples'}
 </button>

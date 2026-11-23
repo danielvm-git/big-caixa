@@ -1,6 +1,6 @@
 # big-caixa
 
-Web app **Livro-caixa** da casa: SvelteKit estático hospedado no [BigBase](https://bigbase.click). Os extratos, faturas e o `livro-caixa.sqlite` ficam em **My_Finances**, fora deste repositório.
+Web app **big-caixa**: SvelteKit estático hospedado no [BigBase](https://bigbase.click). Os extratos, faturas e o `livro-caixa.sqlite` ficam em **My_Finances**, fora deste repositório.
 
 ## Desenvolvimento
 
