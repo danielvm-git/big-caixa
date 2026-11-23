@@ -19,8 +19,12 @@
 
 	onMount(async () => {
 		if (!hideNav) {
-			const neon = await fetchNeonSession();
-			if (neon) setSession(neon);
+			try {
+				const neon = await fetchNeonSession();
+				if (neon) setSession(neon);
+			} catch {
+				// Falha de rede não pode deixar a página em Carregando.
+			}
 			if (!getSession()) {
 				await goto('/login/');
 				return;
