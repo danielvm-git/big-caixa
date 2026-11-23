@@ -9,11 +9,14 @@ credenciais do BigBase e **não foram executados** (não há segredo neste ambie
 2. Criar o site `https://big-caixa.bigbase.click` (framework: static).
 3. Liberar CORS para a origem `https://big-caixa.bigbase.click` (auth e collections).
    Hoje a API responde `403 origin not allowed` (ver `specs/auth-probe.md`).
-   Se o BigBase não liberar a origem, usar `passthrough_paths` da action `bigbase-deploy`
-   para servir `/api` na mesma origem.
-4. GitHub → Settings → Environments → `production`, criar os segredos:
-   - `BIGBASE_SITE_ID`
-   - `BIGBASE_DEPLOY_TOKEN` (`bb_dep_…`)
+   O deploy já envia `passthrough_paths: ["/api"]` e o build de produção usa
+   `VITE_BIGBASE_URL=$SITE_URL`, para o browser falar com `https://big-caixa.bigbase.click/api/...`.
+4. GitHub → Settings → Environments → `production`, criar os segredos (hoje o environment
+   `production` existe mas **não tem secrets**):
+   - `BIGBASE_SITE_ID` — ID do site `big-caixa` (MCP `list_sites` / `get_site`)
+   - `BIGBASE_DEPLOY_TOKEN` — MCP `provision_ci_credentials` → prefixo `bb_dep_`
+
+   Passo a passo BigBase MCP: [discussão 192](https://github.com/danielvm-git/bigbase/discussions/192).
 5. Push na `main` dispara `Test Build Release` e, se verde, `Deploy`.
    O `deploy.yml` baixa `deploy-meta.json`, chama a action `@v1` e faz 8 tentativas de health.
 6. Conferir:

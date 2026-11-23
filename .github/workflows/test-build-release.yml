@@ -94,6 +94,8 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          VITE_BIGBASE_URL: ${{ env.SITE_URL }}
 
       - name: Write deploy-meta
         run: |

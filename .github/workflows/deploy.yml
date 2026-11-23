@@ -58,7 +58,8 @@ jobs:
           deploy_token: ${{ secrets.BIGBASE_DEPLOY_TOKEN }}
           ref: ${{ steps.meta.outputs.ref }}
           branch: main
-          skip_health_check: true
+          # API na mesma origem do site — evita CORS em auth/collections (specs/auth-probe.md).
+          passthrough_paths: '["/api"]'
 
       - name: Health check
         run: |
