@@ -1,0 +1,1609 @@
+// @ts-nocheck
+import { goto } from '$app/navigation';
+const PATH = {
+	hoje: '/hoje/',
+	fluxo: '/fluxo/',
+	mes: '/mes/',
+	compras: '/compras/',
+	viagens: '/viagens/',
+	projetos: '/projetos/',
+	ano: '/ano/',
+	metas: '/metas/',
+	importar: '/importar/',
+	pendencias: '/pendencias/',
+	regras: '/regras/',
+	referencia: '/referencia/',
+	conta: '/conta/',
+	mobile: '/mobile/'
+};
+
+export class Book {
+	setState(update, cb = undefined) {
+		const patch = typeof update === 'function' ? update(this.state) : update;
+		if (patch) Object.assign(this.state, patch);
+		if (typeof cb === 'function') queueMicrotask(cb);
+	}
+	open(r) {
+		const path = PATH[r];
+		if (!path || typeof window === 'undefined') return;
+		const here = window.location.pathname.replace(/\/$/, '');
+		const dest = path.replace(/\/$/, '');
+		if (here !== dest) void goto(path);
+	}
+	state = $state({
+		auth: false,
+		forgot: false,
+		sent: false,
+		loginErr: false,
+		email: 'rafael@casa.exemplo',
+		pwd: '',
+		route: 'hoje',
+		hist: [],
+		dark: false,
+		priv: false,
+		per: 0,
+		esc: 0,
+		base: 0,
+		panel: null,
+		cmd: false,
+		q: '',
+		filt: null,
+		sel: {},
+		picker: null,
+		toast: null,
+		ds: 'normal',
+		view: 'compras',
+		cur: 0,
+		quick: null,
+		sMode: 'Mês',
+		simple: false,
+		cat: 'Restaurantes',
+		mes: 10,
+		trip: 'lisboa',
+		diary: false,
+		proj: 'cozinha',
+		cut: 10,
+		closeStep: -1,
+		expired: false,
+		cnt: 0,
+		openRef: null,
+		test: '',
+		tc: {},
+		importDone: false,
+		feeFixed: false,
+		rows: [
+			{
+				id: 1,
+				date: '23/11',
+				loja: 'Zaffari',
+				titulo: 'Compra do mês',
+				cat: 'Mercado',
+				parc: '1/1',
+				total: 412.8,
+				pago: 412.8,
+				orig: 'Cartão'
+			},
+			{
+				id: 2,
+				date: '22/11',
+				loja: 'Outback',
+				titulo: 'Jantar de aniversário',
+				cat: 'Restaurantes',
+				parc: '1/1',
+				total: 286,
+				pago: 286,
+				orig: 'Cartão'
+			},
+			{
+				id: 3,
+				date: '21/11',
+				loja: 'Amazon',
+				titulo: 'Mochila escolar da Helena',
+				cat: null,
+				parc: '1/3',
+				total: 389.7,
+				pago: 129.9,
+				orig: 'Amazon'
+			},
+			{
+				id: 4,
+				date: '20/11',
+				loja: 'Netflix',
+				titulo: 'Assinatura mensal',
+				cat: 'Assinaturas',
+				parc: '1/1',
+				total: 55.9,
+				pago: 55.9,
+				orig: 'Cartão',
+				sub: true
+			},
+			{
+				id: 5,
+				date: '19/11',
+				loja: 'Droga Raia',
+				titulo: 'Remédios',
+				cat: 'Saúde',
+				parc: '1/1',
+				total: 148.3,
+				pago: 148.3,
+				orig: 'Pix'
+			},
+			{
+				id: 6,
+				date: '18/11',
+				loja: 'Mercado Livre',
+				titulo: 'Cadeira de escritório',
+				cat: null,
+				parc: '3/10',
+				total: 1890,
+				pago: 567,
+				orig: 'Mercado Livre'
+			},
+			{
+				id: 7,
+				date: '17/03',
+				loja: 'TAP Air Portugal',
+				titulo: 'Passagens Lisboa (fora do período)',
+				cat: 'Viagens',
+				parc: '6/10',
+				total: 7800,
+				pago: 4680,
+				orig: 'E-mail',
+				trip: 'lisboa',
+				lock: true
+			},
+			{
+				id: 8,
+				date: '16/11',
+				loja: 'Condomínio Villa Verde',
+				titulo: 'Condomínio',
+				cat: 'Moradia',
+				parc: '1/1',
+				total: 1480,
+				pago: 1480,
+				orig: 'Boleto'
+			},
+			{
+				id: 9,
+				date: '15/11',
+				loja: 'Uber',
+				titulo: 'Corridas da semana',
+				cat: 'Transporte',
+				parc: '1/1',
+				total: 92.4,
+				pago: 92.4,
+				orig: 'Cartão'
+			},
+			{
+				id: 10,
+				date: '14/11',
+				loja: 'Escola Pequeno Sol',
+				titulo: 'Mensalidade',
+				cat: 'Educação',
+				parc: '1/1',
+				total: 800,
+				pago: 800,
+				orig: 'Boleto'
+			},
+			{
+				id: 11,
+				date: '12/11',
+				loja: 'Cinemark',
+				titulo: 'Cinema em família',
+				cat: 'Lazer',
+				parc: '1/1',
+				total: 118,
+				pago: 118,
+				orig: 'Cartão'
+			},
+			{
+				id: 12,
+				date: '10/11',
+				loja: 'Clínica Sorriso',
+				titulo: 'Dentista (extraordinário)',
+				cat: 'Saúde',
+				parc: '2/4',
+				total: 1400,
+				pago: 700,
+				orig: 'Cartão',
+				extra: true
+			}
+		],
+		pend: [
+			{
+				id: 3,
+				loja: 'Amazon',
+				titulo: 'Mochila escolar',
+				date: '21/11',
+				v: 389.7,
+				sug: 'Educação',
+				conf: 92
+			},
+			{
+				id: 6,
+				loja: 'Mercado Livre',
+				titulo: 'Cadeira',
+				date: '18/11',
+				v: 1890,
+				sug: 'Compras',
+				conf: 74
+			},
+			{
+				id: 21,
+				loja: 'Padaria Sol',
+				titulo: 'Café da manhã',
+				date: '17/11',
+				v: 64.2,
+				sug: 'Restaurantes',
+				conf: 92
+			},
+			{
+				id: 22,
+				loja: 'Posto Ipiranga',
+				titulo: 'Combustível',
+				date: '16/11',
+				v: 210,
+				sug: 'Transporte',
+				conf: 95
+			},
+			{
+				id: 23,
+				loja: 'Pague Menos',
+				titulo: 'Farmácia',
+				date: '15/11',
+				v: 96.4,
+				sug: 'Saúde',
+				conf: 90
+			},
+			{
+				id: 24,
+				loja: 'Shopee',
+				titulo: 'Capinha de celular',
+				date: '13/11',
+				v: 58,
+				sug: 'Compras',
+				conf: 70
+			},
+			{
+				id: 25,
+				loja: 'Pix Dona Neide',
+				titulo: 'Transferência',
+				date: '11/11',
+				v: 350,
+				sug: 'Ajuda familiar',
+				conf: 41
+			}
+		],
+		rules: [
+			['Loja contém “Zaffari”', 'Mercado', 142],
+			['Netflix | Spotify | Disney', 'Assinaturas', 36],
+			['Uber | 99', 'Transporte', 88],
+			['Escola Pequeno Sol', 'Educação', 11],
+			['Posto *', 'Transporte', 40],
+			['Padaria *', 'Restaurantes', 52],
+			['Casas Bahia', 'Compras', 0]
+		],
+		coi: {}
+	});
+
+	CATS = {
+		Moradia: 'N',
+		Mercado: 'N',
+		Saúde: 'N',
+		Transporte: 'N',
+		Educação: 'N',
+		Restaurantes: 'D',
+		Lazer: 'D',
+		Compras: 'D',
+		Assinaturas: 'D',
+		Viagens: 'D',
+		Previdência: 'F',
+		Reserva: 'F',
+		'Poupança da Helena': 'F'
+	};
+	CV = [
+		['Moradia', 5200, 5200],
+		['Mercado', 2640, 3050],
+		['Saúde', 1210, 980],
+		['Transporte', 1050, 1450],
+		['Educação', 800, 800],
+		['Restaurantes', 1710, 1980],
+		['Lazer', 1160, 1210],
+		['Compras', 650, 2300],
+		['Assinaturas', 560, 1180]
+	];
+	MN = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+	SER = [17200, 16400, 18100, 17000, 17900, 20800, 18600, 22400, 17600, 18400, 19610, 21800];
+	STORES = {
+		Moradia: [
+			['Aluguel · Imobiliária Prime', 3200],
+			['Condomínio Villa Verde', 1480],
+			['Enel Energia', 520]
+		],
+		Mercado: [
+			['Zaffari', 1480],
+			['Pão de Açúcar', 720],
+			['Hortifruti Vila', 440]
+		],
+		Saúde: [
+			['Clínica Sorriso', 700],
+			['Droga Raia', 310],
+			['Unimed', 200]
+		],
+		Transporte: [
+			['Posto Ipiranga', 560],
+			['Uber', 290],
+			['99', 200]
+		],
+		Educação: [['Escola Pequeno Sol', 800]],
+		Restaurantes: [
+			['Outback', 286],
+			['Madero', 430],
+			['Padaria Sol', 380]
+		],
+		Lazer: [
+			['Cinemark', 118],
+			['Parque Aquático', 640],
+			['Livraria Cultura', 400]
+		],
+		Compras: [
+			['Amazon', 390],
+			['Shopee', 58],
+			['Leroy Merlin', 202]
+		],
+		Assinaturas: [
+			['Netflix', 56],
+			['Spotify', 35],
+			['iCloud', 29]
+		]
+	};
+	TRIPS = {
+		lisboa: {
+			nome: 'Lisboa e Porto',
+			dest: 'Lisboa',
+			datas: '04/07 – 24/07',
+			dias: 21,
+			nota: 'Três semanas com a Helena: Alfama, Sintra de trem e dois dias no Porto. O pastel de Belém virou rotina.',
+			c: [
+				['17/03', 'TAP Air Portugal', '3 passagens', 'Passagens', 7800, 4680, true],
+				['02/05', 'Booking · Casa Alfama', '14 noites', 'Hospedagem', 3900, 3900, true],
+				['30/05', 'Airbnb Porto', '7 noites', 'Hospedagem', 1300, 1300, true],
+				['05–23/07', 'Restaurantes', '11 compras no exterior', 'Alimentação', 3100, 3100, true],
+				['06–22/07', 'Metrô, trem e táxi', '', 'Transporte', 900, 900, true],
+				['10/07', 'Passeios Douro e Pena', '', 'Passeios', 760, 760, true],
+				['20/05', 'Seguro viagem', 'fora do período', 'Outros', 480, 480, true],
+				['08/07', 'GetYourGuide', 'Passeio Sintra', 'Passeios', 640, 0, false]
+			]
+		},
+		gramado: {
+			nome: 'Gramado',
+			dest: 'Gramado',
+			datas: '28/03 – 05/04',
+			dias: 9,
+			nota: 'Páscoa na serra, chocolate quente e frio de verdade.',
+			c: [
+				['10/02', 'Azul Linhas Aéreas', 'passagens', 'Passagens', 2200, 2200, true],
+				['10/02', 'Pousada Bela Vista', '8 noites', 'Hospedagem', 2680, 2680, true],
+				['28/03–05/04', 'Restaurantes', '', 'Alimentação', 960, 960, true],
+				['29/03', 'Aluguel de carro', '', 'Transporte', 520, 520, true],
+				['01/04', 'Snowland', 'ingressos', 'Passeios', 290, 0, false]
+			]
+		},
+		trabalho: {
+			nome: 'São Paulo · trabalho',
+			dest: 'São Paulo',
+			datas: '14/09 – 17/09',
+			dias: 4,
+			nota: 'Congresso de finanças. Pago pela empresa: não entra no custo pessoal.',
+			c: [
+				['01/09', 'Passagens (reembolsadas)', 'empresa', 'Passagens', 1120, 1120, false],
+				['14/09', 'Hotel Paulista (reembolsado)', 'empresa', 'Hospedagem', 1480, 1480, false]
+			]
+		}
+	};
+	PROJ = {
+		cozinha: {
+			nome: 'Reforma da cozinha',
+			per: '12/08 – 30/10',
+			ic: 'ph ph-hammer',
+			orc: 40000,
+			items: [
+				['14/08', 'Marcenaria Pinheiro', 18500],
+				['20/08', 'Eletro: fogão e coifa', 6900],
+				['02/09', 'Pedreiro e azulejista', 3800],
+				['15/09', 'Leroy Merlin', 4200],
+				['10/10', 'Pintura', 2100],
+				['22/10', 'Louças e torneira', 1650]
+			]
+		},
+		festa: {
+			nome: 'Aniversário da Helena',
+			per: '01/09 – 14/09',
+			ic: 'ph ph-cake',
+			orc: 4500,
+			items: [
+				['01/09', 'Buffet Mundo Mágico', 2800],
+				['08/09', 'Bolo e doces', 450],
+				['10/09', 'Lembrancinhas', 380],
+				['12/09', 'Decoração', 520]
+			]
+		},
+		quarto: {
+			nome: 'Quarto da Helena',
+			per: '05/11 – 30/11',
+			ic: 'ph ph-bed',
+			orc: 5500,
+			items: [
+				['05/11', 'Marcenaria sob medida', 3100],
+				['12/11', 'Colchão', 1600]
+			]
+		}
+	};
+
+	R(v, c) {
+		return (
+			(v < 0 ? '−' : '') +
+			'R$ ' +
+			Math.abs(v).toLocaleString('pt-BR', {
+				minimumFractionDigits: c ? 2 : 0,
+				maximumFractionDigits: c ? 2 : 0
+			})
+		);
+	}
+	pts(arr, w, h) {
+		const mx = Math.max(...arr),
+			mn = Math.min(...arr);
+		return arr
+			.map(
+				(v, i) =>
+					((i * w) / (arr.length - 1)).toFixed(1) +
+					',' +
+					(h - 2 - ((v - mn) / (mx - mn || 1)) * (h - 4)).toFixed(1)
+			)
+			.join(' ');
+	}
+	spark(v, seed) {
+		const f = [0.9, 1.05, 0.95, 1, 1.1, 0.92, 1.02, 1.12, 0.88, 1, 0.97, 1];
+		return f.map((x, i) => v * (x + ((i * seed) % 5) * 0.01));
+	}
+	blk(c) {
+		return c ? this.CATS[c] : null;
+	}
+	blkC(b) {
+		return b ? 'var(--' + b + ')' : 'var(--mut)';
+	}
+	bx(b) {
+		return (
+			'display:inline-flex;width:18px;height:18px;border-radius:5px;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--bg);background:' +
+			this.blkC(b) +
+			';'
+		);
+	}
+	set(o) {
+		this.setState(o);
+	}
+	nav(r) {
+		this.setState({ route: r, hist: [], panel: null, filt: null, cnt: 0 }, () => this.count());
+		this.open(r);
+	}
+	drill(r, x) {
+		this.setState((s) => ({ route: r, hist: [...s.hist, s.route], panel: null, ...(x || {}) }));
+		this.open(r);
+	}
+	title(r) {
+		return {
+			hoje: 'Hoje',
+			fluxo: 'Fluxo de caixa',
+			mes: 'Mês e categorias',
+			compras: 'Compras e lançamentos',
+			viagens: 'Viagens e férias',
+			projetos: 'Projetos',
+			ano: 'Ano e projeção',
+			metas: '50/30/20 e metas',
+			importar: 'Importar',
+			pendencias: 'Pendências',
+			regras: 'Regras',
+			referencia: 'Referência ONU',
+			conta: 'Conta',
+			mobile: 'Celular'
+		}[r];
+	}
+	toast(m, u) {
+		clearTimeout(this._t);
+		this.setState({ toast: { m, u } });
+		this._t = setTimeout(() => this.setState({ toast: null }), 5000);
+	}
+	count() {
+		const t0 = performance.now();
+		const f = (t) => {
+			const p = Math.min(1, (t - t0) / 900);
+			this.setState({ cnt: 1 - Math.pow(1 - p, 3) });
+			if (p < 1) requestAnimationFrame(f);
+		};
+		requestAnimationFrame(f);
+	}
+	mountKeys() {
+		this._k = (e) => {
+			if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+				e.preventDefault();
+				this.setState({ cmd: true, q: '' });
+			} else if (e.key === 'Escape') this.setState({ cmd: false, picker: null, panel: null });
+			else if (
+				this.state.route === 'compras' &&
+				this.state.auth &&
+				!this.state.cmd &&
+				(e.key === 'ArrowDown' || e.key === 'ArrowUp') &&
+				e.target.tagName !== 'INPUT' &&
+				e.target.tagName !== 'SELECT'
+			) {
+				e.preventDefault();
+				const n = this.visRows().length;
+				this.setState((s) => ({
+					cur: Math.max(0, Math.min(n - 1, s.cur + (e.key === 'ArrowDown' ? 1 : -1)))
+				}));
+			} else if (
+				e.key === 'Enter' &&
+				this.state.route === 'compras' &&
+				!this.state.panel &&
+				!this.state.cmd &&
+				e.target.tagName === 'BODY'
+			) {
+				const r = this.visRows()[this.state.cur];
+				if (r) this.setState({ panel: r.id });
+			}
+		};
+		document.addEventListener('keydown', this._k);
+	}
+	unmountKeys() {
+		document.removeEventListener('keydown', this._k);
+	}
+	visRows() {
+		const s = this.state;
+		return s.rows.filter((r) => {
+			if (s.filt && s.filt.cat && r.cat !== s.filt.cat) return false;
+			if (s.quick === 'pend') return !r.cat;
+			if (s.quick === 'sub') return r.sub;
+			if (s.quick === 'parc') return r.parc.split('/')[1] !== '1';
+			if (s.quick === 'extra') return r.extra;
+			return true;
+		});
+	}
+	cats() {
+		return this.CV.map(([n, v, p]) => ({ n, v, p, b: this.CATS[n] }));
+	}
+	sankey() {
+		const m = this.state.sMode,
+			mul = m === 'Ano' ? 10 : 1,
+			ideal = m === 'Mês ideal';
+		const S = ideal
+			? [
+					['Salário do Rafael', 11.4],
+					['Salário da Mariana', 7.08],
+					['Freela', 0.6]
+				]
+			: [
+					['Salário do Rafael', 11],
+					['Salário da Mariana', 7],
+					['Freela', 0.6],
+					['Uso de reservas', 0.48]
+				];
+		const tot = S.reduce((a, b) => a + b[1], 0),
+			B = ideal ? { N: tot * 0.5, D: tot * 0.3, F: tot * 0.2 } : { N: 10.9, D: 4.08, F: 4.1 },
+			pes = ideal ? 2 : 2.4,
+			inv = 2.9,
+			casa = tot - pes - inv;
+		const base = {
+				N: [
+					['Moradia', 5.2],
+					['Mercado', 2.64],
+					['Saúde', 1.21],
+					['Transporte', 1.05],
+					['Educação', 0.8]
+				],
+				D: [
+					['Restaurantes', 1.71],
+					['Lazer', 1.16],
+					['Compras', 0.65],
+					['Assinaturas', 0.56]
+				],
+				F: [
+					['Previdência', 1.8],
+					['Reserva', 1.5],
+					['Poupança da Helena', 0.8]
+				]
+			},
+			bb = { N: 10.9, D: 4.08, F: 4.1 };
+		const bn = { N: 'Necessidade', D: 'Desejo', F: 'Futuro' };
+		const nodes = [];
+		const add = (id, l, c, v, col) => nodes.push({ id, l, c, v, col });
+		S.forEach((s, i) =>
+			add('s' + i, s[0], 0, s[1], s[0] === 'Uso de reservas' ? 'var(--terra)' : 'var(--moss)')
+		);
+		add('casa', 'Casa', 1, casa, 'var(--ink)');
+		add('pes', 'Pessoal', 1, pes, 'var(--ink)');
+		add('inv', 'Investimentos', 1, inv, 'var(--ink)');
+		['N', 'D', 'F'].forEach((k) =>
+			add(k, bn[k] + ' · ' + { N: 50, D: 30, F: 20 }[k], 2, B[k], 'var(--' + k + ')')
+		);
+		['N', 'D', 'F'].forEach((k) =>
+			base[k].forEach(([n, v]) => add('c' + n, n, 3, (v * B[k]) / bb[k], 'var(--' + k + ')'))
+		);
+		const L = [];
+		S.forEach((s, i) =>
+			['casa', 'pes', 'inv'].forEach((p) =>
+				L.push([
+					's' + i,
+					p,
+					(s[1] * nodes.find((x) => x.id === p).v) / tot,
+					nodes.find((x) => x.id === p).col === 'x' ? 0 : 'var(--moss)'
+				])
+			)
+		);
+		L.push(
+			['casa', 'N', B.N],
+			['casa', 'D', B.D - pes],
+			['casa', 'F', B.F - inv],
+			['pes', 'D', pes],
+			['inv', 'F', inv]
+		);
+		['N', 'D', 'F'].forEach((k) =>
+			base[k].forEach(([n, v]) => L.push([k, 'c' + n, (v * B[k]) / bb[k]]))
+		);
+		const H = 500,
+			gap = 12,
+			X = [10, 260, 510, 760];
+		let kk = 1e9;
+		for (let c = 0; c < 4; c++) {
+			const ns = nodes.filter((n) => n.c === c);
+			kk = Math.min(kk, (H - gap * (ns.length - 1)) / tot);
+		}
+		for (let c = 0; c < 4; c++) {
+			const ns = nodes.filter((n) => n.c === c);
+			const th = tot * kk + gap * (ns.length - 1);
+			let y = (H - th) / 2 + 10;
+			ns.forEach((n) => {
+				n.h = n.v * kk;
+				n.y = y;
+				n.x = X[c];
+				y += n.h + gap;
+				n.o = 0;
+				n.i = 0;
+			});
+		}
+		const by = (id) => nodes.find((n) => n.id === id);
+		const links = L.filter((l) => l[2] > 0.001).map((l) => {
+			const a = by(l[0]),
+				b = by(l[1]),
+				w = l[2] * kk,
+				y0 = a.y + a.o + w / 2,
+				y1 = b.y + b.i + w / 2;
+			a.o += w;
+			b.i += w;
+			const x0 = a.x + 14,
+				x1 = b.x,
+				xm = (x0 + x1) / 2;
+			return {
+				d: `M${x0} ${y0} C${xm} ${y0} ${xm} ${y1} ${x1} ${y1}`,
+				w: w.toFixed(1),
+				c: l[3] || by(l[1]).col
+			};
+		});
+		const self = this;
+		return {
+			reserva: !ideal,
+			links,
+			nodes: nodes.map((n) => ({
+				x: n.x,
+				y: n.y,
+				h: n.h,
+				c: n.col,
+				tx: n.x + 20,
+				ty: n.y + n.h / 2 + 4,
+				t: n.l + ' · ' + self.R(n.v * 1000 * mul),
+				go: () => {
+					const isCat = n.c === 3;
+					self.drill('compras', {
+						filt: { cat: isCat ? n.l : null, label: n.l },
+						quick: null,
+						cur: 0
+					});
+				}
+			}))
+		};
+	}
+	renderVals() {
+		const s = this.state,
+			self = this,
+			R = (v) => this.R(v),
+			c2 = (v) => this.R(v, true);
+		const route = s.route;
+		const dark = s.dark;
+		const V = dark
+			? {
+					bg: '#161826',
+					sf: '#1e2133',
+					sf2: '#272b44',
+					ink: '#e9e9ed',
+					mut: '#a0a3b8',
+					ln: '#303553',
+					sun: '#9184d9',
+					onsun: '#12131f',
+					terra: '#e69078',
+					moss: '#8dc28a',
+					N: '#7fa3d9',
+					D: '#e0a85c',
+					F: '#b69be0',
+					sky: '#232842',
+					terraBg: '#3a2a30',
+					mossBg: '#243a33'
+				}
+			: {
+					bg: '#f7f0df',
+					sf: '#fffaf0',
+					sf2: '#f0e7d1',
+					ink: '#1d2c4d',
+					mut: '#5b667e',
+					ln: '#e3d8bd',
+					sun: '#f0b429',
+					onsun: '#1d2c4d',
+					terra: '#b8472c',
+					moss: '#3f6e3f',
+					N: '#2f5d9a',
+					D: '#b86a10',
+					F: '#7a4fa8',
+					sky: '#cfe3ee',
+					terraBg: '#f8e3d9',
+					mossBg: '#dfecd5'
+				};
+		const themeStyle =
+			'display:flex;min-height:100vh;height:100vh;overflow:hidden;font-family:Inter,system-ui,sans-serif;font-size:14px;color:var(--ink);background:var(--bg);' +
+			Object.entries(V)
+				.map(([k, v]) => `--${k}:${v}`)
+				.join(';');
+		const card = 'background:var(--sf);border:1px solid var(--ln);border-radius:14px;padding:16px;';
+		const btn =
+			'border:1px solid var(--ln);background:var(--sf);color:var(--ink);border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer;display:inline-flex;gap:6px;align-items:center;';
+		const btnP =
+			'background:var(--sun);color:var(--onsun);border:0;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;gap:6px;align-items:center;justify-content:center;';
+		const rowBtn =
+			'display:flex;gap:10px;align-items:center;border:0;background:transparent;color:var(--ink);padding:9px 4px;cursor:pointer;font-size:14px;width:100%;';
+		const bl = s.priv ? 'filter:blur(7px);' : '';
+		const MOM = [
+			{ id: 'hoje', label: 'Hoje', ic: 'ph ph-sun-horizon', subs: [['hoje', 'Visão geral']] },
+			{
+				id: 'entender',
+				label: 'Entender',
+				ic: 'ph ph-magnifying-glass',
+				subs: [
+					['fluxo', 'Fluxo de caixa'],
+					['mes', 'Mês e categorias'],
+					['compras', 'Compras e lançamentos']
+				]
+			},
+			{
+				id: 'viver',
+				label: 'Viver',
+				ic: 'ph ph-airplane-tilt',
+				subs: [
+					['viagens', 'Viagens e férias'],
+					['projetos', 'Projetos']
+				]
+			},
+			{
+				id: 'planejar',
+				label: 'Planejar',
+				ic: 'ph ph-compass',
+				subs: [
+					['ano', 'Ano e projeção'],
+					['metas', '50/30/20 e metas']
+				]
+			},
+			{
+				id: 'cuidar',
+				label: 'Cuidar',
+				ic: 'ph ph-heartbeat',
+				subs: [
+					['importar', 'Importar'],
+					['pendencias', 'Pendências'],
+					['regras', 'Regras'],
+					['referencia', 'Referência ONU']
+				]
+			}
+		];
+		const momOf = MOM.find((m) => m.subs.some((x) => x[0] === route));
+		const nav = MOM.map((m, i) => ({
+			label: m.label,
+			ic: m.ic,
+			n: i + 1,
+			bg: momOf === m ? 'var(--sf2)' : 'transparent',
+			fw: momOf === m ? 600 : 500,
+			open: momOf === m && m.subs.length > 1,
+			go: () => this.nav(m.subs[0][0]),
+			subs: m.subs.map((x) => ({
+				label: x[1],
+				col: x[0] === route ? 'var(--ink)' : 'var(--mut)',
+				fw: x[0] === route ? 600 : 400,
+				go: () => this.nav(x[0])
+			}))
+		}));
+		const flag = (k) => route === k;
+		const flags = {};
+		[
+			'hoje',
+			'fluxo',
+			'mes',
+			'compras',
+			'viagens',
+			'projetos',
+			'ano',
+			'metas',
+			'importar',
+			'pendencias',
+			'regras',
+			'referencia',
+			'conta',
+			'mobile'
+		].forEach((k) => (flags[k] = flag(k)));
+		const PER = ['Novembro 2026', 'Outubro 2026', 'Ano 2026'],
+			ESC = ['Casa e Pessoal', 'Casa', 'Pessoal', 'Família', 'Investimentos'];
+		const hr = new Date().getHours(),
+			greet = hr < 12 ? 'Bom dia, Rafael' : hr < 18 ? 'Boa tarde, Rafael' : 'Boa noite, Rafael';
+		// hoje
+		const e = this.state.cnt || 1,
+			spentNow = R(14980 * (s.cnt || 0));
+		const scopes = [
+			['Casa', 12580, [11, 12, 11.5, 12.6, 12, 12.8, 12.2, 13.5, 12, 12.4, 12.1, 12.6]],
+			['Pessoal', 2400, [2, 2.4, 2.1, 2.2, 2.6, 2.3, 2.5, 2.2, 2.4, 2.1, 2.3, 2.4]],
+			['Família', 900, [0.6, 0.9, 0.7, 0.9, 1, 0.8, 0.9, 1.1, 0.8, 0.9, 0.9, 0.9]],
+			['Investimentos', 2900, [2.5, 2.9, 2.7, 3, 2.8, 2.9, 3.1, 2.8, 2.9, 2.9, 2.7, 2.9]]
+		].map(([n, v, a]) => ({ n, v: R(v), pts: this.pts(a, 100, 28) }));
+		const cl = this.cats();
+		const topCats = cl
+			.slice()
+			.sort((a, b) => b.v - a.v)
+			.slice(0, 5)
+			.map((c) => {
+				const d = Math.round((c.v / c.p - 1) * 100);
+				return {
+					n: c.n,
+					v: R(c.v),
+					d: (d > 0 ? '+' : d < 0 ? '−' : '') + Math.abs(d) + '%',
+					col: d > 5 ? 'var(--terra)' : d < -5 ? 'var(--moss)' : 'var(--mut)',
+					go: () => this.drill('mes', { cat: c.n })
+				};
+			});
+		const pendN = s.pend.length,
+			pendTot = c2(s.pend.reduce((a, p) => a + p.v, 0));
+		// fluxo
+		const sk = this.sankey();
+		const sTabs = ['Ano', 'Mês', 'Mês ideal'].map((t) => ({
+			l: t,
+			bg: s.sMode === t ? 'var(--sun)' : 'transparent',
+			fw: s.sMode === t ? 600 : 400,
+			go: () => this.set({ sMode: t })
+		}));
+		const stack = ['N', 'D', 'F'].map((k) => {
+			const bc = cl.filter((c) => c.b === k);
+			const nm = { N: 'Necessidade', D: 'Desejo', F: 'Futuro' }[k];
+			const items =
+				k === 'F'
+					? [
+							['Previdência', 1800],
+							['Reserva', 1500],
+							['Poupança da Helena', 800]
+						]
+					: bc.map((c) => [c.n, c.v]);
+			const t = items.reduce((a, b) => a + b[1], 0);
+			return {
+				n: nm + ' · ' + { N: 50, D: 30, F: 20 }[k],
+				v: R(t),
+				c: 'var(--' + k + ')',
+				segs: items.map(([n, v], i) => ({
+					n,
+					w: (v / t) * 100 + '%',
+					o: 1 - i * 0.15,
+					go: () => this.drill('compras', { filt: { cat: n, label: n }, cur: 0 })
+				}))
+			};
+		});
+		// mes
+		const fac = this.SER[s.mes] / 19610,
+			months = this.MN.slice(0, 11).map((l, i) => ({
+				l,
+				bg: s.mes === i ? 'var(--sun)' : 'var(--sf)',
+				col: s.mes === i ? 'var(--onsun)' : 'var(--ink)',
+				go: () => this.set({ mes: i })
+			}));
+		const tot = cl.reduce((a, c) => a + c.v * fac, 0),
+			mx = Math.max(...cl.map((c) => c.v));
+		const catRows = cl.map((c) => {
+			const d = Math.round((c.v / c.p - 1) * 100);
+			return {
+				n: c.n,
+				b: c.b,
+				bx: this.bx(c.b),
+				col: this.blkC(c.b),
+				w: (c.v / mx) * 100 + '%',
+				v: R(c.v * fac),
+				pct: Math.round(((c.v * fac) / tot) * 100) + '%',
+				d: (d > 0 ? '+' : d < 0 ? '−' : '') + Math.abs(d) + '%',
+				dc: d > 5 ? 'var(--terra)' : d < -5 ? 'var(--moss)' : 'var(--mut)',
+				pts: this.pts(this.spark(c.v, c.n.length), 70, 22),
+				bg: s.cat === c.n ? 'var(--sf2)' : 'transparent',
+				go: () => this.set({ cat: c.n })
+			};
+		});
+		const cc = cl.find((c) => c.n === s.cat) || cl[0];
+		const cd = {
+			n: cc.n,
+			b: cc.b,
+			bx: this.bx(cc.b),
+			bn: { N: 'Necessidade', D: 'Desejo', F: 'Futuro' }[cc.b],
+			bars: this.spark(cc.v, cc.n.length).map((v, i) => ({
+				h: (v / (cc.v * 1.25)) * 100 + '%',
+				l: this.MN[i][0],
+				c: i === 11 ? 'var(--ink)' : this.blkC(cc.b)
+			})),
+			stores: (this.STORES[cc.n] || []).map(([n, v]) => ({ n, v: R(v) })),
+			go: () => this.drill('compras', { filt: { cat: cc.n, label: cc.n }, cur: 0 })
+		};
+		// compras
+		const vis = this.visRows();
+		const chipS = (cat) =>
+			'display:inline-flex;gap:6px;align-items:center;border:1px ' +
+			(cat ? 'solid' : 'dashed') +
+			' ' +
+			(cat ? 'var(--ln)' : 'var(--terra)') +
+			';background:var(--sf2);color:var(--ink);padding:2px 8px 2px 3px;border-radius:999px;font-size:12px;cursor:pointer;';
+		const rowOf = (r) => {
+			const b = this.blk(r.cat);
+			return {
+				...r,
+				b: b || '?',
+				bx: this.bx(b),
+				cat: r.cat || 'Sem classificar',
+				lock: !!r.lock,
+				chipS: chipS(r.cat),
+				trip: !!r.trip
+			};
+		};
+		const rows = vis.map((r, i) => ({
+			...rowOf(r),
+			total: c2(r.total),
+			pago: c2(r.pago),
+			ext: r.extra ? '◆ extraordinária' : '',
+			orig: r.orig,
+			chk: !!s.sel[r.id],
+			bg: i === s.cur ? 'var(--sf2)' : 'transparent',
+			open: () => this.set({ panel: r.id, cur: i }),
+			chip: (ev) => {
+				ev.stopPropagation();
+				this.set({ picker: r.id });
+			},
+			pick: (ev) => {
+				ev.stopPropagation();
+				this.setState((st) => ({ sel: { ...st.sel, [r.id]: !st.sel[r.id] } }));
+			}
+		}));
+		const lanc = vis.map((r) => ({
+			date: r.date,
+			loja: r.loja,
+			conta:
+				r.orig === 'Cartão'
+					? 'Itaú Visa'
+					: r.orig === 'Boleto'
+						? 'Itaú Conta'
+						: r.orig === 'Pix'
+							? 'Itaú Conta'
+							: 'Nubank',
+			fat: r.orig === 'Cartão' ? 'Out/26' : '—',
+			v: c2(-r.pago),
+			col: 'var(--terra)',
+			st: r.cat ? 'Classificada' : 'Pendente de revisão',
+			open: () => this.set({ panel: r.id })
+		}));
+		const selN = Object.values(s.sel).filter(Boolean).length;
+		const vTabs = [
+			['compras', 'Compras'],
+			['lanc', 'Lançamentos']
+		].map(([k, l]) => ({
+			l,
+			bg: s.view === k ? 'var(--sun)' : 'transparent',
+			fw: s.view === k ? 600 : 400,
+			go: () => this.set({ view: k })
+		}));
+		const quick = [
+			['pend', 'Sem classificação'],
+			['sub', 'Assinaturas'],
+			['parc', 'Parceladas'],
+			['extra', 'Extraordinárias']
+		].map(([k, l]) => ({
+			l,
+			bg: s.quick === k ? 'var(--sun)' : 'var(--sf)',
+			go: () => this.set({ quick: s.quick === k ? null : k })
+		}));
+		const dsTabs = [
+			['normal', 'normal'],
+			['loading', 'carregando'],
+			['empty', 'vazio'],
+			['error', 'erro']
+		].map(([k, l]) => ({
+			l,
+			bg: s.ds === k ? 'var(--sf2)' : 'transparent',
+			go: () => this.set({ ds: k })
+		}));
+		const catNames = Object.keys(this.CATS);
+		const pr =
+			s.rows.find((r) => r.id === s.panel) ||
+			s.pend
+				.map((p) => ({
+					id: p.id,
+					date: p.date,
+					loja: p.loja,
+					titulo: p.titulo,
+					cat: null,
+					parc: '1/1',
+					total: p.v,
+					pago: p.v,
+					orig: 'Cartão'
+				}))
+				.find((r) => r.id === s.panel);
+		const pn = pr
+			? {
+					...rowOf(pr),
+					total: c2(pr.total),
+					pago: c2(pr.pago),
+					conta: pr.orig === 'Cartão' ? 'Itaú Visa · fatura out/26' : 'Itaú Conta',
+					chip: () => this.set({ picker: pr.id })
+				}
+			: {};
+		// viagens
+		const doy = (d, m) => {
+			const dm = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+			let n = d;
+			for (let i = 0; i < m - 1; i++) n += dm[i];
+			return (n / 365) * 100;
+		};
+		const bar = (a, b, lab, kind, t, go) => ({
+			l: doy(a[0], a[1]) + '%',
+			w: doy(b[0], b[1]) - doy(a[0], a[1]) + '%',
+			t,
+			l2: lab,
+			bg: kind === 'f' ? 'var(--sun)' : kind === 't' ? 'var(--N)' : 'transparent',
+			fg: kind === 'f' ? 'var(--onsun)' : kind === 't' ? 'var(--bg)' : 'var(--ink)',
+			bd: kind === 'w' ? '2px dashed var(--mut)' : '0',
+			go
+		});
+		const tl = [
+			bar([6, 1], [25, 1], 'Férias', 'f', 0, () => {}),
+			bar([28, 3], [6, 4], 'Férias · Páscoa', 'f', 0, () => {}),
+			bar([6, 7], [25, 7], 'Férias', 'f', 0, () => {}),
+			bar([21, 12], [30, 12], 'Férias (plan.)', 'f', 0, () => {}),
+			bar([28, 3], [5, 4], '✈ Gramado', 't', 40, () => this.set({ trip: 'gramado' })),
+			bar([4, 7], [24, 7], '✈ Lisboa e Porto', 't', 40, () => this.set({ trip: 'lisboa' })),
+			bar([14, 9], [17, 9], '💼', 'w', 40, () => this.set({ trip: 'trabalho' }))
+		];
+		const periods = [
+			{
+				n: '2025/26',
+				d: '30 de 30',
+				items: [
+					{ l: '06–25 jul · 20 dias', s: '✈ Lisboa' },
+					{ l: '21–30 dez · 10 dias', s: 'sem viagem' }
+				]
+			},
+			{
+				n: '2024/25',
+				d: '30 de 30',
+				items: [
+					{ l: '06–25 jan · 20 dias', s: 'sem viagem' },
+					{ l: '28 mar–06 abr · 10 dias', s: '✈ Gramado' }
+				]
+			}
+		];
+		const T = this.TRIPS[s.trip];
+		const isW = s.trip === 'trabalho';
+		const comp = T.c.map((c, i) => {
+			const on = s.tc[s.trip + i] !== undefined ? s.tc[s.trip + i] : c[6];
+			return { d: c[0], n: c[1], note: c[2], tipo: c[3], val: c[4], pago: c[5], on, orig: c[6], i };
+		});
+		const mk = comp.filter((c) => c.on);
+		const totT = isW ? 0 : mk.reduce((a, c) => a + c.val, 0),
+			pagoT = mk.reduce((a, c) => a + c.pago, 0);
+		const tipos = {};
+		mk.forEach((c) => (tipos[c.tipo] = (tipos[c.tipo] || 0) + c.val));
+		const tr = {
+			nome: T.nome,
+			dest: T.dest,
+			datas: T.datas,
+			nota: T.nota,
+			total: isW ? 'R$ 0 (empresa paga)' : R(totT),
+			dia: isW ? '—' : R(totT / T.dias),
+			pago: isW ? '—' : R(pagoT),
+			apagar: isW ? '—' : R(totT - pagoT),
+			tipos: isW
+				? []
+				: Object.entries(tipos).map(([n, v]) => ({ n, v: R(v), w: (v / totT) * 100 + '%' })),
+			compras: comp.map((c) => ({
+				d: c.d,
+				n: c.n,
+				note: c.note,
+				v: R(c.val),
+				on: c.on,
+				bg: !c.on && !isW ? 'var(--terraBg)' : 'transparent',
+				tog: () => this.setState((st) => ({ tc: { ...st.tc, [s.trip + c.i]: !c.on } }))
+			}))
+		};
+		const tripTabs = [
+			['lisboa', 'Lisboa'],
+			['gramado', 'Gramado'],
+			['trabalho', 'São Paulo 💼']
+		].map(([k, l]) => ({
+			l,
+			bg: s.trip === k ? 'var(--sun)' : 'var(--sf)',
+			go: () => this.set({ trip: k })
+		}));
+		const yrs = [
+			['2022', 9100],
+			['2023', 14300],
+			['2024', 11800],
+			['2025', 16900],
+			['2026', 24640]
+		].map(([l, v]) => ({ l, v: R(v), h: (v / 24640) * 80 + '%' }));
+		const projs = Object.entries(this.PROJ).map(([k, p]) => {
+			const t = p.items.reduce((a, b) => a + b[2], 0);
+			return {
+				nome: p.nome,
+				per: p.per,
+				ic: p.ic,
+				total: R(t),
+				w: Math.min(100, (t / p.orc) * 100) + '%',
+				sub: 'de ' + R(p.orc) + ' orçados · ' + p.items.length + ' compras',
+				bd: s.proj === k ? 'var(--ink)' : 'var(--ln)',
+				go: () => this.set({ proj: k })
+			};
+		});
+		const P = this.PROJ[s.proj],
+			pj = { nome: P.nome, items: P.items.map((i) => ({ d: i[0], n: i[1], v: R(i[2]) })) };
+		// ano
+		const mx2 = 26000;
+		const ybars = this.MN.map((l, i) => ({
+			l,
+			v: (this.SER[i] / 1000).toFixed(1).replace('.', ','),
+			h: (this.SER[i] / mx2) * 100 + '%',
+			bg:
+				i < 10
+					? 'var(--N)'
+					: 'repeating-linear-gradient(45deg,var(--N),var(--N) 4px,transparent 4px,transparent 8px)',
+			bd: i < 10 ? '0' : '1.5px solid var(--N)'
+		}));
+		const saveM = (2400 * s.cut) / 100;
+		const blocks = [
+			['N', 'Necessidade', '54%', '50%'],
+			['D', 'Desejo', '25%', '30%'],
+			['F', 'Futuro', '21%', '20%']
+		].map(([b, n, r, m]) => ({ b, n, real: r, meta: m, bx: this.bx(b) }));
+		const donut = 'conic-gradient(var(--N) 0 54%,var(--D) 54% 79%,var(--F) 79% 100%)';
+		const goals = [
+			['Reserva de emergência (6 meses)', 62000, 108000],
+			['Viagem 2027', 9000, 25000],
+			['Faculdade da Helena', 34000, 120000],
+			['Previdência 2026', 19800, 24000]
+		].map(([n, a, b]) => ({ n, t: R(a) + ' de ' + R(b), w: (a / b) * 100 + '%' }));
+		const files = [
+			['itau_conta_nov.csv', '22/11 09:12', '12 novos', 'var(--moss)'],
+			['nubank_fatura_out.pdf', '22/11 09:13', '48 novos, 3 repetidos', 'var(--moss)'],
+			['caixa_poupanca.csv', '22/11 09:14', 'Erro: formato', 'var(--terra)']
+		].map(([n, d, st, c]) => ({ n, d, s: st, c }));
+		const pend = s.pend.map((p) => ({
+			loja: p.loja,
+			titulo: p.titulo,
+			date: p.date,
+			v: c2(p.v),
+			sug: p.sug,
+			conf: p.conf + '%',
+			open: () => this.set({ panel: p.id }),
+			ok: () => {
+				this.setState((st) => ({
+					pend: st.pend.filter((x) => x.id !== p.id),
+					rows: st.rows.map((r) =>
+						r.id === p.id ? { ...r, cat: p.sug in this.CATS ? p.sug : 'Compras', lock: true } : r
+					)
+				}));
+				this.toast(p.loja + ' classificada como ' + p.sug, () =>
+					this.setState((st) => ({ pend: [...st.pend, p] }))
+				);
+			}
+		}));
+		const rules = s.rules.map((r, i) => ({
+			i: i + 1,
+			t: r[0],
+			c: r[1],
+			u: r[2] ? r[2] + ' usos' : 'nunca dispara',
+			col: r[2] ? 'var(--mut)' : 'var(--terra)',
+			up: () => this.mv(i, -1),
+			dn: () => this.mv(i, 1)
+		}));
+		const hit = s.test
+			? s.rules.find((r) =>
+					r[0]
+						.toLowerCase()
+						.replace(/[“”*]/g, '')
+						.split(/ \| |contém /)
+						.some(
+							(t) =>
+								(t.trim() &&
+									s.test.toLowerCase().includes(
+										t
+											.trim()
+											.toLowerCase()
+											.replace(/\s*\*$/, '')
+									)) ||
+								(t.trim().toLowerCase().includes(s.test.toLowerCase()) && s.test.length > 2)
+						)
+				)
+			: null;
+		const COI = [
+			['01', 'Alimentos e bebidas não alcoólicas', 2640, 'Mercado'],
+			['02', 'Bebidas alcoólicas e tabaco', 0, '—'],
+			['03', 'Vestuário e calçados', 0, '—'],
+			['04', 'Habitação, água, energia e gás', 5200, 'Moradia'],
+			['05', 'Mobiliário e manutenção da casa', 650, 'Compras'],
+			['06', 'Saúde', 1210, 'Saúde'],
+			['07', 'Transportes', 1050, 'Transporte'],
+			['08', 'Informação e comunicação', 560, 'Assinaturas'],
+			['09', 'Recreação, esporte e cultura', 1160, 'Lazer, Viagens'],
+			['10', 'Serviços de educação', 800, 'Educação'],
+			['11', 'Restaurantes e hospedagem', 1710, 'Restaurantes'],
+			['12', 'Seguros e serviços financeiros', 1800, 'Previdência'],
+			['13', 'Cuidados pessoais e bens diversos', 0, 'Ajuda familiar']
+		];
+		const coicop = COI.map(([k, n, v, c]) => ({
+			k,
+			n,
+			v: R(v),
+			cats: c,
+			open: s.coi[k],
+			ic: s.coi[k] ? 'ph ph-caret-up' : 'ph ph-caret-down',
+			tog: () => this.setState((st) => ({ coi: { ...st.coi, [k]: !st.coi[k] } }))
+		}));
+		const phones = [
+			{
+				t: 'Hoje',
+				h: greet + '. Novembro está 6% acima do ritmo normal.',
+				rows: [
+					{ a: 'Custo até agora', b: R(14980) },
+					{ a: 'Projeção de fechamento', b: R(19610) },
+					{ a: '7 compras a classificar', b: pendTot },
+					{ a: 'Fatura Nubank, 28/11', b: 'R$ 4.812' }
+				]
+			},
+			{
+				t: 'Pendências',
+				h: 'Falta classificar ' + pendN + ' compras',
+				rows: s.pend.slice(0, 5).map((p) => ({ a: p.loja + ' → ' + p.sug, b: c2(p.v) }))
+			},
+			{
+				t: 'Fluxo (versão simples)',
+				h: 'Para onde foi o dinheiro',
+				rows: stack.map((b) => ({ a: b.n, b: b.v }))
+			}
+		];
+		// cmd
+		const items = [
+			...MOM.flatMap((m) => m.subs.map((x) => ({ k: 'Tela', n: x[1], go: () => this.nav(x[0]) }))),
+			...catNames.map((n) => ({
+				k: 'Categoria',
+				n,
+				go: () => this.drill('compras', { filt: { cat: n, label: n }, cur: 0 })
+			})),
+			...['Lisboa e Porto', 'Gramado'].map((n, i) => ({
+				k: 'Viagem',
+				n,
+				go: () => this.drill('viagens', { trip: ['lisboa', 'gramado'][i] })
+			})),
+			...s.rows.map((r) => ({
+				k: 'Compra',
+				n: r.loja + ' · ' + r.titulo,
+				go: () => this.drill('compras', { panel: r.id })
+			}))
+		];
+		const cmdList = items
+			.filter((i) => !s.q || i.n.toLowerCase().includes(s.q.toLowerCase()))
+			.slice(0, 9)
+			.map((i) => ({
+				...i,
+				go: () => {
+					this.setState({ cmd: false });
+					i.go();
+				}
+			}));
+		// fechar
+		const cst = s.closeStep,
+			cs = {
+				s0: cst === 0,
+				s1: cst === 1,
+				s2: cst === 2,
+				s3: cst === 3,
+				s4: cst === 4,
+				done: cst === 5,
+				nav: cst >= 0 && cst < 5
+			};
+		const pickRow = s.picker;
+		const pickList = catNames.map((n) => ({
+			n,
+			b: this.CATS[n],
+			bx: this.bx(this.CATS[n]),
+			pick: () => {
+				const id = s.picker;
+				const old = s.rows.find((r) => r.id === id);
+				this.setState((st) => ({
+					rows: st.rows.map((r) => (r.id === id ? { ...r, cat: n, lock: true } : r)),
+					pend: st.pend.filter((p) => p.id !== id),
+					picker: null
+				}));
+				this.toast(
+					(old ? old.loja : 'Compra') + ' agora é ' + n + ' (manual, vence as regras)',
+					() => this.setState((st) => ({ rows: st.rows.map((r) => (r.id === id ? old : r)) }))
+				);
+			}
+		}));
+		const showApp = s.auth;
+		return {
+			themeStyle,
+			card,
+			btn,
+			btnP,
+			rowBtn,
+			bl,
+			chipS:
+				'display:inline-flex;gap:6px;padding:2px 10px;border-radius:999px;background:var(--sf2);color:var(--ink);align-items:center;',
+			showLogin: !s.auth,
+			showApp,
+			notForgot: !s.forgot,
+			forgot: s.forgot,
+			sent: s.sent,
+			loginErr: s.loginErr,
+			email: s.email,
+			pwd: s.pwd,
+			setEmail: (e) => this.set({ email: e.target.value }),
+			setPwd: (e) => this.set({ pwd: e.target.value }),
+			login: () => {
+				if (s.pwd.length < 4) this.set({ loginErr: true });
+				else {
+					this.set({ auth: true, loginErr: false, route: 'hoje' });
+					this.count();
+				}
+			},
+			toForgot: (e) => {
+				e.preventDefault();
+				this.set({ forgot: true });
+			},
+			backLogin: (e) => {
+				e.preventDefault();
+				this.set({ forgot: false, sent: false });
+			},
+			sendLink: () => this.set({ sent: true }),
+			nav,
+			s: flags,
+			hasBack: s.hist.length > 0,
+			backLabel: s.hist.length ? this.title(s.hist[s.hist.length - 1]) : '',
+			back: () => {
+				const r = this.state.hist[this.state.hist.length - 1];
+				this.setState((st) => ({ route: r, hist: st.hist.slice(0, -1), panel: null }));
+				if (r) this.open(r);
+			},
+			crumb: (momOf ? momOf.label + ' › ' : '') + this.title(route),
+			perLabel: PER[s.per],
+			escLabel: ESC[s.esc],
+			baseLabel: s.base ? 'Competência' : 'Caixa',
+			cyclePer: () => this.set({ per: (s.per + 1) % 3 }),
+			cycleEsc: () => this.set({ esc: (s.esc + 1) % 5 }),
+			toggleBase: () => this.set({ base: s.base ? 0 : 1 }),
+			filt: !!s.filt,
+			filtLabel: s.filt ? s.filt.label : '',
+			clearFilt: () => this.set({ filt: null }),
+			openCmd: () => this.set({ cmd: true, q: '' }),
+			togglePriv: () => this.set({ priv: !s.priv }),
+			privBg: s.priv ? 'var(--sun)' : 'var(--sf)',
+			privIc: s.priv ? 'ph ph-eye-slash' : 'ph ph-eye',
+			toggleDark: () => this.set({ dark: !s.dark }),
+			darkIc: s.dark ? 'ph ph-sun' : 'ph ph-moon',
+			goConta: () => this.nav('conta'),
+			goMobile: () => this.nav('mobile'),
+			openClose: () => this.set({ closeStep: 0 }),
+			greet,
+			today: 'segunda, 23 de novembro',
+			spentNow,
+			barW: (14980 / 19610) * 100 * (s.cnt || 0) + '%',
+			baseW: (14130 / 19610) * 100 + '%',
+			scopes,
+			topCats,
+			pendN,
+			pendTot,
+			goPend: () => this.nav('pendencias'),
+			goCompras: () => this.nav('compras'),
+			goImport: () => this.nav('importar'),
+			newPurchase: () => this.toast('Nova compra manual: formulário a desenhar na próxima rodada'),
+			goFluxo: (e) => {
+				e.preventDefault();
+				this.nav('fluxo');
+			},
+			sk,
+			sTabs,
+			notSimple: !s.simple,
+			simple: s.simple,
+			simpleLabel: s.simple ? 'Ver Sankey' : 'Versão simples',
+			toggleSimple: () => this.set({ simple: !s.simple }),
+			stack,
+			months,
+			catRows,
+			cd,
+			vTabs,
+			quick,
+			dsTabs,
+			ds: {
+				normal: s.ds === 'normal',
+				loading: s.ds === 'loading',
+				empty: s.ds === 'empty',
+				error: s.ds === 'error'
+			},
+			retry: () =>
+				this.set({ ds: 'loading' }, () => setTimeout(() => this.set({ ds: 'normal' }), 900)),
+			skel: [1, 2, 3, 4, 5, 6],
+			vCompras: s.view === 'compras',
+			vLanc: s.view === 'lanc',
+			rows,
+			lanc,
+			selN,
+			catNames,
+			clearSel: () => this.set({ sel: {} }),
+			bulkCat: (e) => {
+				const n = e.target.value;
+				if (!n) return;
+				const ids = Object.keys(s.sel)
+					.filter((k) => s.sel[k])
+					.map(Number);
+				const old = s.rows;
+				this.setState((st) => ({
+					rows: st.rows.map((r) => (ids.includes(r.id) ? { ...r, cat: n, lock: true } : r)),
+					sel: {}
+				}));
+				this.toast(ids.length + ' compras classificadas como ' + n, () => this.set({ rows: old }));
+			},
+			gridC:
+				'display:grid;grid-template-columns:28px 56px minmax(0,1.6fr) minmax(0,1.3fr) 54px 96px 96px 90px;gap:10px;align-items:center;',
+			mnames: this.MN,
+			tl,
+			tlH: 96,
+			periods,
+			tr,
+			tripTabs,
+			diary: s.diary,
+			toggleDiary: () => this.set({ diary: !s.diary }),
+			markAll: () =>
+				this.setState((st) => {
+					const o = {};
+					T.c.forEach((c, i) => (o[s.trip + i] = true));
+					return { tc: { ...st.tc, ...o } };
+				}),
+			yrs,
+			projs,
+			pj,
+			ybars,
+			baseY: (18500 / mx2) * 100 + '%',
+			idealY: (17500 / mx2) * 100 + '%',
+			insights: [
+				'Dezembro costuma custar 18% mais que o ritmo normal.',
+				'Restaurantes caiu 14% em relação a outubro.',
+				'Julho e agosto foram os meses mais caros: viagem e reforma.',
+				'Se mantiver o ritmo, o ano fecha com R$ 215 mil em custo de vida.'
+			],
+			cut: s.cut,
+			setCut: (e) => this.set({ cut: +e.target.value }),
+			saveM: R(saveM),
+			saveY: R(saveM * 12),
+			yearEnd: R(215000 - saveM),
+			donut,
+			blocks,
+			goals,
+			files,
+			pend,
+			pendEmpty: !s.pend.length,
+			rules,
+			test: s.test,
+			setTest: (e) => this.set({ test: e.target.value }),
+			testRes: s.test
+				? hit
+					? 'Casa com: “' + hit[0] + '” → ' + hit[1]
+					: 'Nenhuma regra casa'
+				: '',
+			coicop,
+			phones,
+			themeName: s.dark ? 'escuro' : 'claro',
+			privName: s.priv ? 'ligado' : 'desligado',
+			expire: () => this.set({ expired: true }),
+			relogin: () => this.set({ expired: false }),
+			logout: () => this.signOut(),
+			panel: !!pr,
+			pn,
+			closePanel: () => this.set({ panel: null }),
+			mkRule: () => {
+				this.setState((st) => ({
+					rules: [['Loja contém “' + pr.loja + '”', pr.cat || 'Compras', 0], ...st.rules]
+				}));
+				this.toast('Regra criada: ' + pr.loja + ' → ' + (pr.cat || 'Compras'));
+			},
+			goTrip: () => this.drill('viagens', { trip: pr.trip, panel: null }),
+			markExtra: () => {
+				this.setState((st) => ({
+					rows: st.rows.map((r) => (r.id === pr.id ? { ...r, extra: true } : r))
+				}));
+				this.toast('Marcada como extraordinária: fora do ritmo normal');
+			},
+			picker: !!pickRow,
+			pickList,
+			closePicker: () => this.set({ picker: null }),
+			stop: (e) => e.stopPropagation(),
+			cmd: s.cmd,
+			q: s.q,
+			setQ: (e) => this.set({ q: e.target.value }),
+			closeCmd: () => this.set({ cmd: false }),
+			cmdList,
+			closeOpen: cst >= 0,
+			closeW: ((cst + 1) / 6) * 100 + '%',
+			closeStepLabel: cst < 5 ? 'Passo ' + (cst + 1) + ' de 5' : 'Concluído',
+			closeX: () => this.set({ closeStep: -1 }),
+			cs,
+			nextLabel: cst === 4 ? 'Fechar o mês' : 'Continuar',
+			closeNext: () => this.set({ closeStep: cst + 1 }),
+			closePrev: () => this.set({ closeStep: Math.max(0, cst - 1) }),
+			importLabel: s.importDone ? '✓ Importado' : 'Importar o que falta',
+			fakeImport: () => this.set({ importDone: true }),
+			approveHigh: () => {
+				const hi = s.pend.filter((p) => p.conf >= 90);
+				this.setState((st) => ({ pend: st.pend.filter((p) => p.conf < 90) }));
+				this.toast(hi.length + ' compras aprovadas', () =>
+					this.setState((st) => ({ pend: [...st.pend, ...hi] }))
+				);
+			},
+			feeLabel: s.feeFixed ? '✓ Marcada como tarifa bancária' : 'Marcar diferença como tarifa',
+			fixFee: () => this.set({ feeFixed: true }),
+			share: () => this.toast('Resumo de outubro enviado para a Mariana'),
+			toast: !!s.toast,
+			toastMsg: s.toast ? s.toast.m : '',
+			toastUndo: !!(s.toast && s.toast.u),
+			undo: () => {
+				s.toast.u();
+				this.set({ toast: null });
+			},
+			expired: s.expired
+		};
+	}
+	view() {
+		return this.renderVals();
+	}
+	async signOut() {
+		try {
+			const { signOutNeon } = await import('$lib/auth/neon');
+			await Promise.race([signOutNeon(), new Promise((resolve) => setTimeout(resolve, 4000))]);
+		} catch {
+			/* já saiu */
+		}
+		const { clearSession } = await import('$lib/auth/session');
+		clearSession();
+		this.set({ auth: false, pwd: '' });
+		await goto('/login/');
+	}
+	mv(i, d) {
+		this.setState((st) => {
+			const a = st.rules.slice(),
+				j = i + d;
+			if (j < 0 || j >= a.length) return null;
+			[a[i], a[j]] = [a[j], a[i]];
+			return { rules: a };
+		});
+	}
+}
+
+export const book = new Book();
