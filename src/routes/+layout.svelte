@@ -31,6 +31,8 @@
 					return;
 				}
 			}
+			const sessao = getSession();
+			if (sessao && sessao.token !== 'mock-token') await book.loadLedger(sessao.email);
 			pronta = true;
 			book.set({ auth: true });
 			book.mountKeys();

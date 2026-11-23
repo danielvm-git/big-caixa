@@ -142,12 +142,21 @@
 		</div>
 
 		<main style="flex:1;overflow:auto;padding:24px;position:relative">
+			{#if v.gap}
+				<div style="max-width:720px;display:flex;flex-direction:column;gap:12px;animation:up .3s">
+					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">{v.gapTitle}</h1>
+					<p style="margin:0;color:var(--mut);font-size:15px;max-width:52ch">
+						Esta parte ainda mostrava a casa de exemplo do protótipo. Os extratos e as faturas
+						entram em Hoje, Fluxo, Mês, Compras e Pendências.
+					</p>
+				</div>
+			{/if}
 			{#if v.s.hoje}
 				<div style="display:flex;flex-direction:column;gap:20px;max-width:1180px;animation:up .3s">
 					<div>
 						<div style="color:var(--mut);font-size:14px">{v.greet} · {v.today}</div>
 						<h1 style="font:600 32px/1.2 'Source Serif 4',serif;margin:6px 0 0;text-wrap:pretty">
-							Novembro está 6% acima do ritmo normal; faltam 7 dias.
+							{v.headline}
 						</h1>
 					</div>
 					<div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px">
@@ -159,7 +168,7 @@
 								>
 									{v.spentNow}
 								</span><span style="color:var(--mut);font-size:14px">
-									ritmo normal até hoje: <span style={v.bl}>R$ 14.130</span>
+									<span style={v.bl}>{v.paceNote}</span>
 								</span>
 							</div>
 							<div style="position:relative;height:14px;border-radius:7px;background:var(--sf2)">
@@ -173,9 +182,8 @@
 							<div
 								style="display:flex;justify-content:space-between;font-size:12px;color:var(--mut);margin-top:6px"
 							>
-								<span>Marca preta = ritmo normal para o mês</span><span>
-									Projeção de fechamento: <b style="color:var(--ink);{v.bl}">R$ 19.610</b> (ritmo: R$
-									18.500)
+								<span>Marca preta = referência do período</span><span>
+									<b style="color:var(--ink);{v.bl}">{v.projectionNote}</b>
 								</span>
 							</div>
 						</div>
@@ -192,25 +200,29 @@
 									</span>
 								</span>→
 							</button>
-							<button onclick={v.goCompras} style={v.rowBtn}>
-								<i class="ph ph-credit-card" style="color:var(--terra);font-size:20px"></i><span
-									style="flex:1;text-align:left"
-								>
-									<b>1 fatura para conferir</b><br /><span style="color:var(--mut);font-size:12px">
-										Itaú Visa: diferença de R$ 1,50
-									</span>
-								</span>→
-							</button>
-							<button onclick={v.goImport} style={v.rowBtn}>
-								<i class="ph ph-arrows-left-right" style="color:var(--terra);font-size:20px"
-								></i><span style="flex:1;text-align:left">
-									<b>2 transferências sem par</b><br /><span
-										style="color:var(--mut);font-size:12px"
+							{#if v.sample}
+								<button onclick={v.goCompras} style={v.rowBtn}>
+									<i class="ph ph-credit-card" style="color:var(--terra);font-size:20px"></i><span
+										style="flex:1;text-align:left"
 									>
-										Caixa poupança ↔ Itaú
-									</span>
-								</span>→
-							</button>
+										<b>1 fatura para conferir</b><br /><span
+											style="color:var(--mut);font-size:12px"
+										>
+											Itaú Visa: diferença de R$ 1,50
+										</span>
+									</span>→
+								</button>
+								<button onclick={v.goImport} style={v.rowBtn}>
+									<i class="ph ph-arrows-left-right" style="color:var(--terra);font-size:20px"
+									></i><span style="flex:1;text-align:left">
+										<b>2 transferências sem par</b><br /><span
+											style="color:var(--mut);font-size:12px"
+										>
+											Caixa poupança ↔ Itaú
+										</span>
+									</span>→
+								</button>
+							{/if}
 						</div>
 					</div>
 					<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">
@@ -305,10 +317,7 @@
 						</div>
 						<button onclick={v.toggleSimple} style={v.btn}>{v.simpleLabel}</button>
 					</div>
-					<div style="font-size:13px;color:var(--mut)">
-						Fontes → casa, pessoal e investimentos → blocos 50/30/20 → categorias. Clique em
-						qualquer bloco para ver as compras.
-					</div>
+					<div style="font-size:13px;color:var(--mut)">{v.fluxoHint}</div>
 					<div style="{v.card}overflow:auto">
 						{#if v.notSimple}<svg
 								viewBox="0 0 1000 540"
@@ -441,7 +450,7 @@
 									<div style="flex:1;background:var(--mut)"></div>
 								</div>
 								<span style="color:var(--mut);font-size:12px">
-									Casa 50% · Rafael 20% · Mariana 20% · Helena 10%
+									{#if v.real}{v.escopoShare}{:else}Casa 50% · Rafael 20% · Mariana 20% · Helena 10%{/if}
 								</span>
 							</div>
 							<button onclick={v.cd.go} style={v.btnP}>Ver as compras de {v.cd.n} →</button>
@@ -606,7 +615,7 @@
 				</div>
 			{/if}
 
-			{#if v.s.viagens}
+			{#if v.s.viagens && v.sample}
 				<div style="max-width:1180px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
 					<div>
 						<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">
@@ -759,7 +768,7 @@
 				</div>
 			{/if}
 
-			{#if v.s.projetos}
+			{#if v.s.projetos && v.sample}
 				<div style="max-width:1100px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
 					<div>
 						<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Projetos da casa</h1>
@@ -801,7 +810,7 @@
 				</div>
 			{/if}
 
-			{#if v.s.ano}
+			{#if v.s.ano && v.sample}
 				<div style="max-width:1100px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
 					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">O ano e o que vem a seguir</h1>
 					<div style={v.card}>
@@ -857,7 +866,7 @@
 				</div>
 			{/if}
 
-			{#if v.s.metas}
+			{#if v.s.metas && v.sample}
 				<div style="max-width:1100px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
 					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">50/30/20 e metas</h1>
 					<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px">
@@ -904,7 +913,7 @@
 				</div>
 			{/if}
 
-			{#if v.s.importar}
+			{#if v.s.importar && v.sample}
 				<div style="max-width:900px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
 					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Importar extratos</h1>
 					<div
@@ -950,17 +959,16 @@
 									{p.titulo} · {p.date}
 								</span>
 							</div>
-							<span style="font-variant-numeric:tabular-nums;{v.bl}">{p.v}</span><span
-								style="font-size:13px;color:var(--mut)"
-							>
-								parece <b style="color:var(--ink)">{p.sug}</b>, {p.conf}
-							</span>
+							<span style="font-variant-numeric:tabular-nums;{v.bl}">{p.v}</span>
+							{#if p.sug}<span style="font-size:13px;color:var(--mut)">
+									parece <b style="color:var(--ink)">{p.sug}</b>{#if p.conf}, {p.conf}{/if}
+								</span>{/if}
 							<button onclick={p.ok} style={v.btnP}>Aprovar</button>
 						</div>{/each}
 				</div>
 			{/if}
 
-			{#if v.s.regras}
+			{#if v.s.regras && v.sample}
 				<div style="max-width:960px;display:flex;flex-direction:column;gap:14px;animation:up .3s">
 					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Regras de classificação</h1>
 					<div style="color:var(--mut);font-size:14px">
@@ -991,7 +999,7 @@
 				</div>
 			{/if}
 
-			{#if v.s.referencia}
+			{#if v.s.referencia && v.sample}
 				<div style="max-width:960px;display:flex;flex-direction:column;gap:10px;animation:up .3s">
 					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">
 						Referência ONU · COICOP 2018
@@ -1021,10 +1029,12 @@
 				<div style="max-width:720px;display:flex;flex-direction:column;gap:14px;animation:up .3s">
 					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Conta e ajustes</h1>
 					<div style="{v.card}display:flex;flex-direction:column;gap:6px;font-size:14px">
-						<b>Perfil</b>Rafael Andrade · rafael@casa.exemplo<b style="margin-top:8px">
-							Pessoas da casa
-						</b>Rafael, Mariana, Helena (filha)<b style="margin-top:8px">Contas e cartões</b>Itaú
-						Conta · Itaú Visa · Nubank · Caixa poupança
+						<b>Perfil</b>{v.who}{#if v.mail}
+							· {v.mail}{/if}<b style="margin-top:8px"> Pessoas da casa </b>{v.people}<b
+							style="margin-top:8px"
+						>
+							Contas e cartões
+						</b>{v.accounts}
 					</div>
 					<div style="{v.card}display:flex;gap:10px;flex-wrap:wrap">
 						<button onclick={v.toggleDark} style={v.btn}>Tema: {v.themeName}</button><button
@@ -1041,7 +1051,7 @@
 				</div>
 			{/if}
 
-			{#if v.s.mobile}
+			{#if v.s.mobile && v.sample}
 				<div style="display:flex;gap:28px;flex-wrap:wrap;justify-content:center;animation:up .3s">
 					{#each v.phones as ph}<div>
 							<div style="text-align:center;font-size:13px;color:var(--mut);margin-bottom:8px">
@@ -1192,7 +1202,15 @@
 				style="flex:1;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto"
 			>
 				<div style="max-width:620px;width:100%;display:flex;flex-direction:column;gap:16px">
-					{#if v.cs.s0}<h1 style="font:600 32px 'Source Serif 4',serif;margin:0">
+					{#if v.real}
+						<h1 style="font:600 32px 'Source Serif 4',serif;margin:0">
+							O fechamento ainda não grava no livro
+						</h1>
+						<p style="margin:0;color:var(--mut)">
+							Os passos seguintes eram da casa de exemplo. O custo do mês está em Hoje.
+						</p>
+					{/if}
+					{#if v.sample && v.cs.s0}<h1 style="font:600 32px 'Source Serif 4',serif;margin:0">
 							Falta importar alguma coisa?
 						</h1>
 						<div style="{v.card}font-size:14px;display:flex;flex-direction:column;gap:8px">
@@ -1202,7 +1220,7 @@
 								! Caixa poupança: faltam 12 dias
 							</span><button onclick={v.fakeImport} style={v.btn}>{v.importLabel}</button>
 						</div>{/if}
-					{#if v.cs.s1}<h1 style="font:600 32px 'Source Serif 4',serif;margin:0">
+					{#if v.sample && v.cs.s1}<h1 style="font:600 32px 'Source Serif 4',serif;margin:0">
 							Faltam {v.pendN} compras para classificar
 						</h1>
 						<div style="color:var(--mut)">
@@ -1211,7 +1229,7 @@
 						<button onclick={v.approveHigh} style={v.btnP}>
 							Aprovar sugestões de alta confiança
 						</button>{/if}
-					{#if v.cs.s2}<h1 style="font:600 32px 'Source Serif 4',serif;margin:0">
+					{#if v.sample && v.cs.s2}<h1 style="font:600 32px 'Source Serif 4',serif;margin:0">
 							As faturas conferem centavo a centavo?
 						</h1>
 						<div style="{v.card}display:flex;justify-content:space-between">
@@ -1223,7 +1241,7 @@
 							<span>Itaú Visa</span><b style={v.bl}>diferença de R$ 1,50</b>
 						</div>
 						<button onclick={v.fixFee} style={v.btn}>{v.feeLabel}</button>{/if}
-					{#if v.cs.s3}<h1 style="font:600 32px 'Source Serif 4',serif;margin:0">
+					{#if v.sample && v.cs.s3}<h1 style="font:600 32px 'Source Serif 4',serif;margin:0">
 							Alguma compra é de viagem ou projeto?
 						</h1>
 						<div style="{v.card}display:flex;flex-direction:column;gap:8px;font-size:14px">
@@ -1234,7 +1252,7 @@
 								<input type="checkbox" style="accent-color:var(--ink)" /> Cinemark → Aniversário da Helena
 							</label>
 						</div>{/if}
-					{#if v.cs.s4}<h1 style="font:600 32px 'Source Serif 4',serif;margin:0">
+					{#if v.sample && v.cs.s4}<h1 style="font:600 32px 'Source Serif 4',serif;margin:0">
 							Como foi outubro?
 						</h1>
 						<div style="{v.card}font-size:14px">
@@ -1246,7 +1264,10 @@
 							rows="3"
 							style="border-radius:12px;border:1px solid var(--ln);background:var(--sf);color:var(--ink);padding:12px;font-size:14px"
 						></textarea>{/if}
-					{#if v.cs.done}<i class="ph ph-house-line" style="font-size:48px;color:var(--moss)"></i>
+					{#if v.sample && v.cs.done}<i
+							class="ph ph-house-line"
+							style="font-size:48px;color:var(--moss)"
+						></i>
 						<h1 style="font:600 40px 'Source Serif 4',serif;margin:0">Outubro fechado</h1>
 						<div style="{v.card}font-size:14px;display:flex;flex-direction:column;gap:6px">
 							<b>O que mudou</b><span>Moradia subiu 4% com a reforma.</span><span>
@@ -1256,7 +1277,7 @@
 						<button onclick={v.share} style={v.btnP}>
 							<i class="ph ph-paper-plane-tilt"></i> Compartilhar resumo com a Mariana
 						</button>{/if}
-					{#if v.cs.nav}<div
+					{#if v.sample && v.cs.nav}<div
 							style="display:flex;gap:10px;justify-content:space-between;margin-top:8px"
 						>
 							<button onclick={v.closePrev} style={v.btn}>Voltar</button><button
