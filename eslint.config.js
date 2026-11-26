@@ -41,15 +41,6 @@ export default ts.config(
 		}
 	},
 	{
-		files: ['src/lib/livro/LivroApp.svelte'],
-		rules: {
-			'svelte/a11y-click-events-have-key-events': 'off',
-			'svelte/a11y-no-static-element-interactions': 'off',
-			'svelte/a11y-autofocus': 'off',
-			'svelte/a11y-no-noninteractive-element-interactions': 'off'
-		}
-	},
-	{
 		files: ['src/lib/livro/book.svelte.ts'],
 		rules: {
 			'@typescript-eslint/ban-ts-comment': 'off',
