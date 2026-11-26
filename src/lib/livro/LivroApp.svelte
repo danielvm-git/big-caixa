@@ -1,6 +1,10 @@
 <script lang="ts">
 	// @ts-nocheck — markup fiel ao protótipo, tipos dinâmicos
 	import Casa from '$lib/livro/Casa.svelte';
+	import EntradasSpreadsheet from '$lib/livro/EntradasSpreadsheet.svelte';
+	import AiSubscriptionsView from '$lib/livro/AiSubscriptionsView.svelte';
+	import ViagensFeriasView from '$lib/livro/ViagensFeriasView.svelte';
+	import DevemView from '$lib/livro/DevemView.svelte';
 	import { book } from '$lib/livro/book.svelte';
 	let v = $derived(book.view());
 </script>
@@ -316,9 +320,49 @@
 
 			{#if v.s.visao}
 				<div style="display:flex;flex-direction:column;gap:14px;animation:up .3s">
-					<div>
-						<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">{v.visaoTitle}</h1>
-						<div style="color:var(--mut);font-size:14px">{v.visaoNote}</div>
+					<div
+						style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px"
+					>
+						<div>
+							<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">{v.visaoTitle}</h1>
+							<div style="color:var(--mut);font-size:14px;margin-top:2px">{v.visaoNote}</div>
+						</div>
+						<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+							<div
+								style="display:flex;gap:4px;background:var(--sf2);padding:3px;border-radius:10px;border:1px solid var(--ln)"
+							>
+								{#each v.visaoPerspectivas as p}
+									<button
+										type="button"
+										onclick={p.go}
+										style="border:0;border-radius:7px;padding:6px 14px;font-size:13px;cursor:pointer;background:{p.bg};color:var(--ink);font-weight:{p.fw};box-shadow:{p.fw ===
+										600
+											? '0 1px 3px rgba(0,0,0,0.08)'
+											: 'none'};transition:all .15s"
+									>
+										{p.l}
+									</button>
+								{/each}
+							</div>
+							<div style="display:flex;align-items:center;gap:6px">
+								<button
+									type="button"
+									onclick={v.expandAllDivisoes}
+									style="padding:6px 12px;font-size:12px;font-weight:500;border-radius:8px;border:1px solid var(--ln);background:var(--sf);color:var(--ink);cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s"
+									title="Expandir todas as divisões"
+								>
+									<span>▼</span> Expandir
+								</button>
+								<button
+									type="button"
+									onclick={v.collapseAllDivisoes}
+									style="padding:6px 12px;font-size:12px;font-weight:500;border-radius:8px;border:1px solid var(--ln);background:var(--sf);color:var(--ink);cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s"
+									title="Recolher todas as divisões"
+								>
+									<span>▶</span> Recolher
+								</button>
+							</div>
+						</div>
 					</div>
 					{#if v.ledgerError}
 						<div style={v.card}>
@@ -328,47 +372,82 @@
 						<div style={v.card}>Sem dados de ano no livro.</div>
 					{:else}
 						<div style="{v.card}padding:0;overflow:auto">
-							<div style="min-width:1240px">
+							<div style="min-width:1260px">
 								<div
-									style="display:grid;grid-template-columns:210px repeat(12,minmax(72px,1fr)) 92px 104px;gap:6px;padding:10px 14px;font-size:11px;color:var(--mut);text-transform:uppercase;position:sticky;top:0;background:var(--sf)"
+									style="display:grid;grid-template-columns:260px repeat(12,minmax(72px,1fr)) 92px 104px;gap:6px;padding:10px 14px;font-size:11px;color:var(--mut);text-transform:uppercase;position:sticky;top:0;background:var(--sf);z-index:2;border-bottom:1px solid var(--ln)"
 								>
-									<span></span>
+									<span>Estrutura / Categoria</span>
 									{#each v.mnames as mn}<span style="text-align:right">{mn}</span>{/each}
 									<span style="text-align:right">Média</span>
 									<span style="text-align:right">Total</span>
 								</div>
 								{#each v.visaoRows as r}
-									{#if r.go}
-										<button
-											type="button"
-											onclick={r.go}
-											style="display:grid;grid-template-columns:210px repeat(12,minmax(72px,1fr)) 92px 104px;gap:6px;padding:7px 14px;border-top:1px solid var(--ln);font-size:{r.fs};font-weight:{r.fw};background:{r.bg};font-variant-numeric:tabular-nums;width:100%;text-align:left;border-left:0;border-right:0;cursor:pointer;color:var(--ink)"
-										>
-											<span style="padding-left:{r.pl}">{r.l}</span>
-											{#each r.v as c}<span
-													style="text-align:right;color:{c.mut
-														? 'var(--mut)'
-														: 'var(--ink)'};{v.bl}"
-												>
-													{c.t}
-												</span>{/each}
-											<span style="text-align:right;color:var(--mut);{v.bl}">{r.m}</span>
-											<span style="text-align:right;{v.bl}">{r.t}</span>
-										</button>
-									{:else}
+									{#if !r.isHidden}
 										<div
-											style="display:grid;grid-template-columns:210px repeat(12,minmax(72px,1fr)) 92px 104px;gap:6px;padding:7px 14px;border-top:1px solid var(--ln);font-size:{r.fs};font-weight:{r.fw};background:{r.bg};font-variant-numeric:tabular-nums"
+											role={r.go ? 'button' : undefined}
+											tabindex={r.go ? 0 : undefined}
+											onclick={r.go}
+											onkeydown={(e) => {
+												if (e.key === 'Enter' || e.key === ' ') r.go?.();
+											}}
+											style="display:grid;grid-template-columns:260px repeat(12,minmax(72px,1fr)) 92px 104px;gap:6px;padding:7px 14px;border-top:1px solid var(--ln);font-size:{r.fs};font-weight:{r.fw};background:{r.bg};font-variant-numeric:tabular-nums;cursor:{r.go
+												? 'pointer'
+												: 'default'};align-items:center;transition:background .15s"
 										>
-											<span style="padding-left:{r.pl}">{r.l}</span>
-											{#each r.v as c}<span
+											<div
+												style="display:flex;align-items:center;gap:6px;padding-left:{r.pl};overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+											>
+												{#if r.isDivision}
+													<span
+														style="font-size:10px;color:var(--mut);display:inline-block;transition:transform .2s;transform:{r.isCollapsed
+															? 'rotate(0deg)'
+															: 'rotate(90deg)'}"
+													>
+														▶
+													</span>
+													<span
+														style="font-size:10px;font-family:monospace;padding:1px 5px;border-radius:4px;background:rgba(59,130,246,0.15);color:#3b82f6;font-weight:700"
+													>
+														{r.divisaoId}
+													</span>
+													<span
+														style="font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis"
+													>
+														{r.l.split(' · ')[1] || r.l}
+													</span>
+													{#if r.childCount}
+														<span
+															style="font-size:10px;color:var(--mut);background:var(--sf2);padding:1px 6px;border-radius:10px"
+														>
+															({r.childCount})
+														</span>
+													{/if}
+												{:else if r.isCategory}
+													<span style="font-size:10px;color:var(--mut);opacity:0.6">↳</span>
+													<span style="overflow:hidden;text-overflow:ellipsis;color:var(--ink)">
+														{r.l}
+													</span>
+												{:else}
+													<span style="font-weight:600;color:var(--ink)">{r.l}</span>
+												{/if}
+											</div>
+											{#each r.v as c}
+												<span
 													style="text-align:right;color:{c.mut
 														? 'var(--mut)'
 														: 'var(--ink)'};{v.bl}"
 												>
 													{c.t}
-												</span>{/each}
+												</span>
+											{/each}
 											<span style="text-align:right;color:var(--mut);{v.bl}">{r.m}</span>
-											<span style="text-align:right;{v.bl}">{r.t}</span>
+											<span
+												style="text-align:right;font-weight:{r.isDivision || r.isSummary
+													? '600'
+													: '400'};{v.bl}"
+											>
+												{r.t}
+											</span>
 										</div>
 									{/if}
 								{/each}
@@ -705,157 +784,16 @@
 				</div>
 			{/if}
 
+			{#if v.s.entradas}
+				<EntradasSpreadsheet />
+			{/if}
+
+			{#if v.s.ia}
+				<AiSubscriptionsView />
+			{/if}
+
 			{#if v.s.viagens}
-				<div style="max-width:1180px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
-					<div>
-						<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">
-							2026: o ano em tempo e estrada
-						</h1>
-						<div style="color:var(--mut);font-size:14px">
-							Férias e viagens num só calendário. Viagens de trabalho (tracejadas) são pagas pela
-							empresa e não entram no custo pessoal.
-						</div>
-					</div>
-					<div style={v.card}>
-						<div
-							style="display:grid;grid-template-columns:repeat(12,1fr);font-size:11px;color:var(--mut);border-bottom:1px solid var(--ln);padding-bottom:4px"
-						>
-							{#each v.mnames as mn}<span>{mn}</span>{/each}
-						</div>
-						<div style="position:relative;height:{v.tlH}px;margin-top:8px">
-							{#each v.tl as b}<button
-									onclick={b.go}
-									style="position:absolute;left:{b.l};width:{b.w};top:{b.t}px;height:32px;border-radius:8px;border:{b.bd};background:{b.bg};color:{b.fg};font-size:12px;padding:0 6px;overflow:hidden;white-space:nowrap;cursor:pointer;text-align:left"
-								>
-									{b.l2}
-								</button>{/each}
-						</div>
-					</div>
-					<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
-						{#each v.periods as p}<div style={v.card}>
-								<div style="display:flex;justify-content:space-between">
-									<b>Período aquisitivo {p.n}</b><span style="font:600 20px 'Source Serif 4',serif">
-										{p.d}
-									</span>
-								</div>
-								{#each p.items as i}<div
-										style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-top:1px solid var(--ln);margin-top:6px"
-									>
-										<span>{i.l}</span><span
-											style="background:var(--sf2);border-radius:999px;padding:1px 9px;font-size:12px"
-										>
-											{i.s}
-										</span>
-									</div>{/each}
-							</div>{/each}
-					</div>
-					<div style="{v.card}display:flex;flex-direction:column;gap:14px">
-						<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-							<h2 style="font:600 24px 'Source Serif 4',serif;margin:0;flex:1">{v.tr.nome}</h2>
-							{#each v.tripTabs as t}<button
-									onclick={t.go}
-									style="border:1px solid var(--ln);border-radius:999px;padding:4px 12px;font-size:13px;cursor:pointer;background:{t.bg};color:var(--ink)"
-								>
-									{t.l}
-								</button>{/each}
-							<button onclick={v.toggleDiary} style={v.btn}>
-								<i class="ph ph-book-open-text"></i> Diário de viagem
-							</button>
-						</div>
-						{#if v.diary}<div
-								style="display:grid;grid-template-columns:1fr 1fr;gap:14px;animation:up .2s"
-							>
-								<div
-									style="height:180px;border-radius:14px;background:repeating-linear-gradient(45deg,var(--sf2),var(--sf2) 10px,var(--sf) 10px,var(--sf) 20px);display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:13px"
-								>
-									mapa simples de {v.tr.dest} (a definir)
-								</div>
-								<div>
-									<div style="font:600 18px 'Source Serif 4',serif">{v.tr.dest}, {v.tr.datas}</div>
-									<div style="color:var(--mut);font-size:14px;margin-top:6px;text-wrap:pretty">
-										{v.tr.nota}
-									</div>
-								</div>
-							</div>{/if}
-						<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">
-							<div>
-								<div style="font-size:12px;color:var(--mut)">Ida e volta</div>
-								<b>{v.tr.datas}</b>
-							</div>
-							<div>
-								<div style="font-size:12px;color:var(--mut)">Custo pessoal</div>
-								<div style="font:600 22px 'Source Serif 4',serif;{v.bl}">{v.tr.total}</div>
-							</div>
-							<div>
-								<div style="font-size:12px;color:var(--mut)">Por dia</div>
-								<div style="font:600 22px 'Source Serif 4',serif;{v.bl}">{v.tr.dia}</div>
-							</div>
-							<div>
-								<div style="font-size:12px;color:var(--mut)">Pago × a pagar</div>
-								<b style={v.bl}>{v.tr.pago} × {v.tr.apagar}</b>
-							</div>
-						</div>
-						<div style="display:flex;flex-direction:column;gap:6px">
-							{#each v.tr.tipos as t}<div
-									style="display:grid;grid-template-columns:110px 1fr 90px;gap:10px;align-items:center;font-size:13px"
-								>
-									<span>{t.n}</span>
-									<div style="height:10px;background:var(--sf2);border-radius:5px">
-										<div
-											style="height:10px;border-radius:5px;background:var(--N);width:{t.w}"
-										></div>
-									</div>
-									<span style="text-align:right;font-variant-numeric:tabular-nums;{v.bl}">
-										{t.v}
-									</span>
-								</div>{/each}
-						</div>
-						<div>
-							<div
-								style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"
-							>
-								<b>Compras do período</b><span style="display:flex;gap:6px">
-									<button onclick={v.markAll} style={v.btn}>Marcar todas</button>
-								</span>
-							</div>
-							{#each v.tr.compras as c}<label
-									style="display:grid;grid-template-columns:24px 70px 1fr 100px;gap:10px;align-items:center;padding:8px 10px;border-radius:8px;font-size:14px;background:{c.bg}"
-								>
-									<input
-										type="checkbox"
-										checked={c.on}
-										onchange={c.tog}
-										style="accent-color:var(--ink)"
-									/><span style="color:var(--mut);font-size:12px">{c.d}</span><span>
-										{c.n} <span style="color:var(--mut);font-size:12px">{c.note}</span>
-									</span><span style="text-align:right;font-variant-numeric:tabular-nums;{v.bl}">
-										{c.v}
-									</span>
-								</label>{/each}
-							<div style="font-size:12px;color:var(--mut);margin-top:6px">
-								Compras em destaque ainda não foram marcadas como gasto de viagem. Compras fora do
-								período (como passagens) entram com a busca.
-							</div>
-						</div>
-					</div>
-					<div style={v.card}>
-						<b>Custo de viagens ao longo dos anos</b>
-						<div style="display:flex;align-items:flex-end;gap:14px;height:120px;margin-top:10px">
-							{#each v.yrs as y}<div
-									style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px;font-size:11px"
-								>
-									<span style={v.bl}>{y.v}</span>
-									<div
-										style="width:100%;max-width:60px;height:{y.h};background:var(--sun);border-radius:4px 4px 0 0"
-									></div>
-									<span>{y.l}</span>
-								</div>{/each}
-						</div>
-						<div style="font-size:13px;color:var(--mut);margin-top:6px">
-							Média por viagem de lazer: <b style="color:var(--ink);{v.bl}">R$ 6.950</b>
-						</div>
-					</div>
-				</div>
+				<ViagensFeriasView />
 			{/if}
 
 			{#if v.s.projetos && v.sample}
@@ -961,15 +899,7 @@
 			{/if}
 
 			{#if v.s.devem}
-				<div style="max-width:1100px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
-					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Quem deve a quem</h1>
-					<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">
-						{#each v.devemKpis as k}<div style={v.card}>
-								<div style="font-size:12px;color:var(--mut)">{k.l}</div>
-								<div style="font:600 22px 'Source Serif 4',serif;{v.bl}">{k.v}</div>
-							</div>{/each}
-					</div>
-				</div>
+				<DevemView />
 			{/if}
 
 			{#if v.s.empregados}
@@ -987,8 +917,42 @@
 
 			{#if v.s.custo}
 				<div style="max-width:1100px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
-					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Custo e pagamentos</h1>
-					<div style={v.card}>{v.casaCadastroFalta}</div>
+					<div style="display:flex;justify-content:space-between;align-items:baseline">
+						<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">
+							Custo e pagamentos da casa
+						</h1>
+						<span style="color:var(--mut);font-size:14px">{v.perLabel}</span>
+					</div>
+					{#if v.custoItens?.length}
+						<div style="{v.card}display:flex;flex-direction:column;gap:10px">
+							<div
+								style="font:600 14px 'Source Serif 4',serif;padding-bottom:8px;border-bottom:1px solid var(--ln);display:grid;grid-template-columns:1fr 140px 140px;gap:12px"
+							>
+								<span>Categoria</span>
+								<span style="text-align:right">Recorrente</span>
+								<span style="text-align:right">Total</span>
+							</div>
+							{#each v.custoItens as it}
+								<div
+									style="display:grid;grid-template-columns:1fr 140px 140px;gap:12px;align-items:center;padding:6px 0;border-bottom:1px solid var(--sf2);font-size:13px"
+								>
+									<span style="font-weight:500">{it.nome}</span>
+									<span
+										style="text-align:right;color:var(--mut);font-variant-numeric:tabular-nums;{v.bl}"
+									>
+										{it.recorrente}
+									</span>
+									<span
+										style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums;{v.bl}"
+									>
+										{it.total}
+									</span>
+								</div>
+							{/each}
+						</div>
+					{:else}
+						<div style={v.card}>{v.casaCadastroFalta}</div>
+					{/if}
 				</div>
 			{/if}
 

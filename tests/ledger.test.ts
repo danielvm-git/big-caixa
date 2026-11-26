@@ -106,4 +106,29 @@ describe('visão geral do ano', () => {
 		expect(rows.some((r) => r.categoriaId === 'lazer')).toBe(false);
 		expect(rows.some((r) => r.categoriaId === 'mercado')).toBe(true);
 	});
+
+	it('perspectiva casa inclui apenas gastos de casa', () => {
+		const meses: Record<string, MesDoc[]> = {
+			'2026-11': [linha('casa', 'mercado', 50), linha('pessoal', 'eletronicos', 300)]
+		};
+		const L = ledgerComMeses(meses);
+		const rowsCasa = visaoGeralAno(L, 2026, 'casa');
+		expect(rowsCasa.some((r) => r.categoriaId === 'mercado')).toBe(true);
+		expect(rowsCasa.some((r) => r.categoriaId === 'eletronicos')).toBe(false);
+		expect(rowsCasa.some((r) => r.categoriaId === 'repasse_casa')).toBe(false);
+	});
+
+	it('perspectiva pessoal inclui repasse fixo de 10k e gastos pessoais', () => {
+		const meses: Record<string, MesDoc[]> = {
+			'2026-11': [linha('casa', 'mercado', 50), linha('pessoal', 'eletronicos', 300)]
+		};
+		const L = ledgerComMeses(meses);
+		const rowsPessoal = visaoGeralAno(L, 2026, 'pessoal');
+		expect(rowsPessoal.some((r) => r.categoriaId === 'eletronicos')).toBe(true);
+		expect(rowsPessoal.some((r) => r.categoriaId === 'repasse_casa')).toBe(true);
+		expect(rowsPessoal.some((r) => r.categoriaId === 'mercado')).toBe(false);
+		const repasseRow = rowsPessoal.find((r) => r.categoriaId === 'repasse_casa');
+		expect(repasseRow?.cells[0].v).toBe(10000);
+		expect(repasseRow?.total).toBe(120000);
+	});
 });
