@@ -39,6 +39,15 @@ const pool = {
 	on: (...args) => getPool().on(...args)
 };
 
+let _hasCore = null;
+async function hasCoreSchema() {
+	if (_hasCore === null) {
+		const q = await pool.query(`SELECT to_regclass('core.journal_entry') IS NOT NULL AS ok`);
+		_hasCore = Boolean(q.rows[0]?.ok);
+	}
+	return _hasCore;
+}
+
 class ValidationError extends Error {
 	constructor(message = 'invalid') {
 		super(message);
@@ -243,6 +252,18 @@ async function handle(body) {
 	if (op === 'reclassificar_entrada') {
 		const { transacao_id, conta_codigo } = body;
 		if (!transacao_id || !conta_codigo) throw new ValidationError('invalid');
+		if (!(await hasCoreSchema())) {
+			const res = await pool.query(
+				`UPDATE caixa.fato_lancamento l
+				 SET categoria_id = c.id, manual = 1
+				 FROM caixa.dim_categoria c
+				 WHERE l.id::text = $1
+				   AND l.tipo = 'receita'
+				   AND c.id = $2`,
+				[String(transacao_id), conta_codigo]
+			);
+			return { ok: true, count: res.rowCount };
+		}
 		const res = await pool.query(
 			`UPDATE core.journal_entry j
 			 SET account_id = a_new.id
