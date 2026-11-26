@@ -26,6 +26,7 @@ logs/
 deploy-meta.json
 specs/neon-auth.env
 .data/
+scripts/local/
 
 # Vite
 vite.config.js.timestamp-*
