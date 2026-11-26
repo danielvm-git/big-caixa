@@ -1,5 +1,5 @@
 version: 1
-active_epic: e02
+active_epic: e03
 stories:
   e01s01:
     title: 'Create shared UI primitives (Money, PageHeader, DataState, SegmentedTabs)'
@@ -31,3 +31,13 @@ stories:
     status: done
     started_at: '2026-11-26T18:22:00-03:00'
     completed_at: '2026-11-26T18:22:30-03:00'
+  e03s01:
+    title: 'Transform LivroApp into AppShell with children slot and connect native routes'
+    status: in_progress
+    started_at: '2026-11-26T19:41:00-03:00'
+  e03s02:
+    title: 'Extract remaining views into standalone components'
+    status: pending
+  e03s03:
+    title: 'Modularize stores and verify architecture tests'
+    status: pending

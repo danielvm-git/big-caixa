@@ -1,0 +1,30 @@
+type: epic
+context: big-caixa/onda-3
+id: e03
+slug: onda-3
+title: 'Onda 3 — Roteamento Real & Modularização de Stores (AppShell & SvelteKit Routes)'
+wsjf: 9.0
+bcps: 6
+scope:
+  in:
+    - 'Transformar LivroApp em AppShell composável com suporte a {@render children()} no main'
+    - 'Atualizar +layout.svelte para passar {@render children()} ao LivroApp/AppShell'
+    - 'Conectar rotas nativas do SvelteKit em src/routes/<route>/+page.svelte montando diretamente suas views'
+    - 'Extrair views remanescentes de LivroApp (MesView, MetasView, AnoView, PendenciasView, ImportarView, RegrasView, ReferenciaView, ContaView, CasaView)'
+    - 'Modularizar stores em ui.svelte.ts e ledger-context.svelte.ts mantendo retrocompatibilidade em book.svelte.ts'
+    - 'Criar testes de roteamento real e verificar preflight suite'
+  out:
+    - 'Alterações no backend Neon ou schema do Postgres (fora de escopo)'
+stories:
+  - id: e03s01
+    title: 'Transform LivroApp into AppShell with children slot and connect native routes'
+    wsjf: 9.5
+    bcps: 2
+  - id: e03s02
+    title: 'Extract remaining views into standalone components'
+    wsjf: 9.0
+    bcps: 2
+  - id: e03s03
+    title: 'Modularize stores and verify architecture tests'
+    wsjf: 8.5
+    bcps: 2

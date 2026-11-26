@@ -1,17 +1,16 @@
 version: 1
-active_flow: idle
-active_epic: e02
-active_branch: main
+active_flow: build_epic
+active_epic: e03
+active_branch: feat/e03-onda-3-native-routing
 last_merged_pr: 7
-commit_sha: 204b6de
-status: done
+commit_sha: 161004a
+status: in_progress
 epic_cycle:
-  epic: e02
-  story: e02s03
-  step: 8
-  story_bcps: 6
-  audit_result: pass
-  review_result: pass
+  epic: e03
+  story: e03s01
+  step: 3
+  story_bcps: 2
+  audit_result: pending
 steps:
   step_1_audit_and_cleanup: done
   step_2_deferred_items: done
@@ -19,9 +18,10 @@ steps:
   step_4_strangler_fig_phase2: done
   e01_onda_1_ui_primitives: done
   e02_onda_2_topbar_taxonomy: done
+  e03_onda_3_native_routing: in_progress
 handoff:
-  next_skill: none
-  context: 'Epic e02 (Onda 2 — Contrato da Topbar & Taxonomia) successfully shipped and merged via PR #7 into main (commit 204b6de).'
+  next_skill: build-epic
+  context: 'Starting execution of Epic e03 (Onda 3 — Roteamento Real & Modularização de Stores) on feat/e03-onda-3-native-routing.'
 decisions:
   - id: D-001
     gate: strangler_fig_phase2
@@ -50,3 +50,6 @@ decisions:
   - id: D-009
     gate: release_branch_e02
     reason: Released feat/e02-onda-2-topbar-taxonomy via PR #7, repaired Prettier markdown formatting in CI, verified green checks, squash-merged, and cleaned branch.
+  - id: D-010
+    gate: planning_spine_e03
+    reason: Scoped Epic e03 (Onda 3), created tasks and threat model, initialized feat/e03-onda-3-native-routing autonomously.
