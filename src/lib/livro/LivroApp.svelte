@@ -7,6 +7,10 @@
 	import DevemView from '$lib/livro/DevemView.svelte';
 	import { book } from '$lib/livro/book.svelte';
 	let v = $derived(book.view());
+
+	function focusOnMount(node) {
+		node.focus();
+	}
 </script>
 
 <div style={v.themeStyle}>
@@ -384,8 +388,8 @@
 								{#each v.visaoRows as r}
 									{#if !r.isHidden}
 										<div
-											role={r.go ? 'button' : undefined}
-											tabindex={r.go ? 0 : undefined}
+											role="button"
+											tabindex={r.go ? 0 : -1}
 											onclick={r.go}
 											onkeydown={(e) => {
 												if (e.key === 'Enter' || e.key === ' ') r.go?.();
@@ -496,7 +500,13 @@
 										stroke-width={l.w}
 										opacity=".32"
 									/>{/each}
-								{#each v.sk.nodes as n}<g onclick={n.go} style="cursor:pointer">
+								{#each v.sk.nodes as n}<g
+										role="button"
+										tabindex="0"
+										onclick={n.go}
+										onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && n.go?.()}
+										style="cursor:pointer"
+									>
 										<rect x={n.x} y={n.y} width="14" height={n.h} rx="3" fill={n.c} /><text
 											x={n.tx}
 											y={n.ty}
@@ -516,11 +526,13 @@
 											<b>{b.n}</b><span style={v.bl}>{b.v}</span>
 										</div>
 										<div style="display:flex;height:22px;border-radius:6px;overflow:hidden;gap:2px">
-											{#each b.segs as g}<div
+											{#each b.segs as g}<button
+													type="button"
 													title={g.n}
+													aria-label={g.n}
 													onclick={g.go}
-													style="width:{g.w};background:{b.c};opacity:{g.o};cursor:pointer"
-												></div>{/each}
+													style="border:0;padding:0;width:{g.w};background:{b.c};opacity:{g.o};cursor:pointer"
+												></button>{/each}
 										</div>
 									</div>{/each}
 							</div>{/if}
@@ -556,7 +568,10 @@
 							</div>
 							{#each v.catRows as c}<div
 									data-hv
+									role="button"
+									tabindex="0"
 									onclick={c.go}
+									onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && c.go?.()}
 									style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1.2fr) 86px 52px 66px 70px;gap:8px;align-items:center;padding:9px 0;border-top:1px solid var(--ln);cursor:pointer;background:{c.bg}"
 								>
 									<span style="display:flex;gap:8px;align-items:center;font-size:14px">
@@ -685,7 +700,10 @@
 									</div>
 									{#each v.rows as r}<div
 											data-hv
+											role="button"
+											tabindex="0"
 											onclick={r.open}
+											onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && r.open?.()}
 											style="{v.gridC}padding:8px 14px;border-top:1px solid var(--ln);cursor:pointer;background:{r.bg};font-size:14px"
 										>
 											<input
@@ -736,7 +754,10 @@
 									</div>
 									{#each v.lanc as r}<div
 											data-hv
+											role="button"
+											tabindex="0"
 											onclick={r.open}
+											onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && r.open?.()}
 											style="display:grid;grid-template-columns:70px 1.6fr 1fr 1fr 100px 110px;gap:10px;padding:9px 14px;border-top:1px solid var(--ln);font-size:14px;cursor:pointer"
 										>
 											<span style="color:var(--mut)">{r.date}</span><span>{r.loja}</span><span
@@ -1053,8 +1074,13 @@
 							<b>Mês ideal como referência</b>
 							<div style="font-size:14px;color:var(--mut);margin-top:4px">
 								Para uma renda de R$ 19.080: R$ 9.540 em necessidades, R$ 5.724 em desejos e R$
-								3.816 no futuro. Compare no <a href="#" onclick={v.goFluxo}>Fluxo de caixa</a>, aba
-								“Mês ideal”.
+								3.816 no futuro. Compare no <button
+									type="button"
+									onclick={v.goFluxo}
+									style="border:0;background:transparent;padding:0;color:inherit;text-decoration:underline;cursor:pointer;font:inherit"
+								>
+									Fluxo de caixa
+								</button>, aba “Mês ideal”.
 							</div>
 						</div>{/if}
 				</div>
@@ -1110,7 +1136,13 @@
 							</div>{/each}{:else}{#each v.pend as p}<div
 								style="{v.card}display:flex;gap:14px;align-items:center;padding:12px 16px"
 							>
-								<div style="flex:1;cursor:pointer" onclick={p.open}>
+								<div
+									role="button"
+									tabindex="0"
+									style="flex:1;cursor:pointer"
+									onclick={p.open}
+									onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && p.open?.()}
+								>
 									<b>{p.loja}</b><br /><span style="font-size:12px;color:var(--mut)">
 										{p.titulo} · {p.date}
 									</span>
@@ -1301,11 +1333,16 @@
 	{/if}
 
 	{#if v.picker}<div
+			role="presentation"
 			onclick={v.closePicker}
 			style="position:fixed;inset:0;background:rgba(10,12,24,.45);display:flex;align-items:center;justify-content:center;z-index:40"
 		>
 			<div
+				role="dialog"
+				aria-modal="true"
+				tabindex="-1"
 				onclick={v.stop}
+				onkeydown={(e) => e.key === 'Escape' && v.closePicker?.()}
 				style="background:var(--sf);border-radius:16px;padding:16px;width:340px;max-height:80vh;overflow:auto;display:flex;flex-direction:column;gap:4px"
 			>
 				<b style="font:600 18px 'Source Serif 4',serif;margin-bottom:6px">Classificar como…</b>
@@ -1320,15 +1357,20 @@
 		</div>{/if}
 
 	{#if v.cmd}<div
+			role="presentation"
 			onclick={v.closeCmd}
 			style="position:fixed;inset:0;background:rgba(10,12,24,.45);display:flex;justify-content:center;padding-top:12vh;z-index:50"
 		>
 			<div
+				role="dialog"
+				aria-modal="true"
+				tabindex="-1"
 				onclick={v.stop}
+				onkeydown={(e) => e.key === 'Escape' && v.closeCmd?.()}
 				style="background:var(--sf);border-radius:16px;width:560px;max-width:92vw;height:fit-content;overflow:hidden"
 			>
 				<input
-					autofocus
+					use:focusOnMount
 					value={v.q}
 					oninput={v.setQ}
 					placeholder="Buscar lojas, compras, viagens, categorias, telas…"
