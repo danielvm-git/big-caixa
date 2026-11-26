@@ -1,1 +1,5 @@
-<p class="mut">Fluxo de caixa — shell LivroApp.</p>
+<script lang="ts">
+	import FluxoView from '$lib/livro/FluxoView.svelte';
+</script>
+
+<FluxoView />

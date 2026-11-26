@@ -1,1 +1,5 @@
-<p class="mut">Visão geral do ano — shell LivroApp.</p>
+<script lang="ts">
+	import VisaoGeralView from '$lib/livro/VisaoGeralView.svelte';
+</script>
+
+<VisaoGeralView />

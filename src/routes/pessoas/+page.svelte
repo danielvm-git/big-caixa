@@ -1,1 +1,5 @@
-<p class="mut">Pessoas — shell LivroApp.</p>
+<script lang="ts">
+	import CasaView from '$lib/livro/CasaView.svelte';
+</script>
+
+<CasaView secao="pessoas" />
