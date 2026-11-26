@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { loadViagens, loadFerias } from '$lib/read-model/client';
 	import type { ViagemDoc, FeriasDoc } from '$lib/read-model/types';
+	import { DataState, Money, PageHeader, SegmentedTabs } from '$lib/ui';
 
 	let viagens = $state<ViagemDoc[]>([]);
 	let ferias = $state<FeriasDoc[]>([]);
@@ -10,6 +11,11 @@
 
 	let selectedAno = $state<number>(2026);
 	let selectedTripId = $state<number | null>(null);
+
+	const yearOptions = [2027, 2026, 2025, 2024].map((yr) => ({
+		value: yr,
+		label: String(yr)
+	}));
 
 	const MESES = [
 		'Jan',
@@ -114,10 +120,6 @@
 		return Math.min(100, (dayDiff / 365) * 100);
 	}
 
-	function formatCurrency(val: number) {
-		return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
-	}
-
 	function formatDateRange(d1Str: string, d2Str: string) {
 		const d1 = parseIsoLocal(d1Str);
 		const d2 = parseIsoLocal(d2Str);
@@ -127,43 +129,27 @@
 </script>
 
 <div class="vf-container">
-	<!-- Header -->
-	<header class="vf-header">
-		<div>
-			<div class="breadcrumb">Viver · Descanso & Estradas</div>
-			<h1 class="page-title">{selectedAno}: o ano em tempo e estrada</h1>
-			<p class="page-subtitle">
-				Férias e viagens num só calendário unificado. Viagens corporativas são custeadas pela
-				empresa e não oneram o orçamento pessoal.
-			</p>
-		</div>
-		<div class="header-actions">
-			<div class="year-switcher">
-				{#each [2027, 2026, 2025, 2024] as yr}
-					<button
-						class="yr-btn"
-						class:active={selectedAno === yr}
-						onclick={() => (selectedAno = yr)}
-					>
-						{yr}
-					</button>
-				{/each}
-			</div>
+	<PageHeader
+		title="{selectedAno}: o ano em tempo e estrada"
+		subtitle="Férias e viagens num só calendário unificado. Viagens corporativas são custeadas pela empresa e não oneram o orçamento pessoal."
+	>
+		{#snippet actions()}
+			<SegmentedTabs
+				items={yearOptions}
+				value={selectedAno}
+				ariaLabel="Ano do calendário"
+				onchange={(yr) => (selectedAno = yr)}
+			/>
 			<button class="btn-refresh" onclick={loadData} aria-label="Atualizar viagens e férias">
 				<i class="ph ph-arrows-clockwise"></i>
 			</button>
-		</div>
-	</header>
+		{/snippet}
+	</PageHeader>
 
 	{#if loading}
-		<div class="loading-state">
-			<i class="ph ph-spinner-gap spin"></i> Carregando calendário de férias e viagens...
-		</div>
+		<DataState kind="loading" message="Carregando calendário de férias e viagens..." />
 	{:else if error}
-		<div class="error-state">
-			<i class="ph ph-warning-circle"></i>
-			{error}
-		</div>
+		<DataState kind="error" message={error} onretry={loadData} />
 	{:else}
 		<!-- Timeline Section -->
 		<section class="timeline-card">
@@ -287,9 +273,11 @@
 					<div class="meta-box">
 						<span class="meta-label">Custo Pessoal no Livro</span>
 						<b class="meta-val" class:free={selectedTrip.empresa === 1}>
-							{selectedTrip.empresa === 1
-								? 'R$ 0,00 (Empresa paga)'
-								: formatCurrency(selectedTrip.total_gasto || 0)}
+							{#if selectedTrip.empresa === 1}
+								<Money value={0} /> (Empresa paga)
+							{:else}
+								<Money value={selectedTrip.total_gasto || 0} />
+							{/if}
 						</b>
 					</div>
 					<div class="meta-box">
@@ -324,7 +312,7 @@
 										<td class="dt">{c.data}</td>
 										<td><b>{c.loja}</b></td>
 										<td class="desc-col">{c.titulo}</td>
-										<td class="amt" style="text-align: right;">{formatCurrency(c.valor)}</td>
+										<td class="amt" style="text-align: right;"><Money value={c.valor} /></td>
 									</tr>
 								{/each}
 							</tbody>
@@ -355,66 +343,6 @@
 			opacity: 1;
 			transform: translateY(0);
 		}
-	}
-
-	.vf-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		gap: 16px;
-		flex-wrap: wrap;
-	}
-
-	.breadcrumb {
-		font-size: 13px;
-		color: var(--mut);
-		margin-bottom: 4px;
-	}
-
-	.page-title {
-		font:
-			600 32px/1.2 'Source Serif 4',
-			serif;
-		margin: 0 0 6px 0;
-		color: var(--ink);
-	}
-
-	.page-subtitle {
-		margin: 0;
-		font-size: 15px;
-		color: var(--mut);
-		max-width: 65ch;
-	}
-
-	.header-actions {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-	}
-
-	.year-switcher {
-		display: flex;
-		background: var(--sf);
-		border: 1px solid var(--ln);
-		border-radius: 8px;
-		padding: 3px;
-	}
-
-	.yr-btn {
-		border: 0;
-		background: transparent;
-		padding: 6px 12px;
-		font-size: 13px;
-		font-weight: 500;
-		color: var(--mut);
-		border-radius: 6px;
-		cursor: pointer;
-	}
-
-	.yr-btn.active {
-		background: var(--sun);
-		color: var(--onsun);
-		font-weight: 600;
 	}
 
 	.btn-refresh {
@@ -742,23 +670,5 @@
 	.purchases-table td {
 		padding: 10px 12px;
 		border-bottom: 1px solid var(--ln);
-	}
-
-	.loading-state,
-	.error-state {
-		text-align: center;
-		padding: 48px;
-		font-size: 15px;
-		color: var(--mut);
-	}
-
-	.spin {
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		100% {
-			transform: rotate(360deg);
-		}
 	}
 </style>

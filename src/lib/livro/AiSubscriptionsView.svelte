@@ -7,6 +7,7 @@
 		atualizarAiSubscription
 	} from '$lib/read-model/client';
 	import type { AiSubscriptionDoc, AiPricingDoc, AiSummaryDoc } from '$lib/read-model/types';
+	import { DataState, Money, PageHeader, SegmentedTabs } from '$lib/ui';
 
 	let subscriptions = $state<AiSubscriptionDoc[]>([]);
 	let pricing = $state<AiPricingDoc[]>([]);
@@ -108,13 +109,12 @@
 		})
 	);
 
-	function formatUsd(val: number) {
-		return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
-	}
-
-	function formatBrl(val: number) {
-		return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
-	}
+	let aiTabs = $derived([
+		{ value: 'all' as const, label: 'Todos os Serviços', count: subscriptions.length },
+		{ value: 'agents' as const, label: 'Editores & Agentes' },
+		{ value: 'apis' as const, label: 'APIs & Modelos' },
+		{ value: 'pricing' as const, label: 'Tabela de Preços', count: pricing.length }
+	]);
 
 	function formatDate(dStr: string | null) {
 		if (!dStr) return '—';
@@ -123,29 +123,24 @@
 		return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
 	}
 
-	let creditHint = $derived(
+	let creditItems = $derived(
 		subscriptions
 			.filter((s) => s.balance_usd > 0)
 			.sort((a, b) => b.balance_usd - a.balance_usd)
 			.slice(0, 3)
-			.map((s) => `${s.name}: ${formatUsd(s.balance_usd)}`)
-			.join(' · ') || 'Sem créditos pré-pagos'
 	);
 
-	let spendHint = $derived(
+	let spendItems = $derived(
 		subscriptions
 			.filter((s) => s.month_spent_usd > 0)
 			.sort((a, b) => b.month_spent_usd - a.month_spent_usd)
 			.slice(0, 2)
-			.map((s) => `${s.name} (${formatUsd(s.month_spent_usd)})`)
-			.join(' + ') || 'Sem consumo registrado'
 	);
 
-	let nextRenewalHint = $derived.by(() => {
+	let nextRenewalMatch = $derived.by(() => {
 		const nextDate = summary?.next_renewal_date?.slice(0, 10);
-		if (!nextDate) return 'Nenhuma renovação agendada';
-		const match = subscriptions.find((s) => s.renewal_date?.slice(0, 10) === nextDate);
-		return match ? `${match.name} (${formatUsd(match.cost_usd)}/mês)` : 'Próxima cobrança';
+		if (!nextDate) return null;
+		return subscriptions.find((s) => s.renewal_date?.slice(0, 10) === nextDate) ?? null;
 	});
 
 	function getProviderBadgeColor(key: string) {
@@ -175,33 +170,22 @@
 </script>
 
 <div class="ai-view-container">
-	<!-- Page Header -->
-	<header class="ai-header">
-		<div>
-			<div class="breadcrumb">Cuidar · Ferramentas Digitais</div>
-			<h1 class="page-title">Assinaturas & APIs de IA</h1>
-			<p class="page-subtitle">
-				Monitoramento de custos fixos recorrentes, saldos de créditos pré-pagos e consumo de tokens
-				por provedor.
-			</p>
-		</div>
-		<div class="header-actions">
+	<PageHeader
+		title="Assinaturas & APIs de IA"
+		subtitle="Monitoramento de custos fixos recorrentes, saldos de créditos pré-pagos e consumo de tokens por provedor."
+	>
+		{#snippet actions()}
 			<span class="rate-badge">Câmbio ref: $1.00 USD = R$ 6.00 BRL</span>
 			<button class="btn-refresh" onclick={loadData}>
 				<i class="ph ph-arrows-clockwise"></i> Atualizar
 			</button>
-		</div>
-	</header>
+		{/snippet}
+	</PageHeader>
 
 	{#if loading}
-		<div class="loading-state">
-			<i class="ph ph-spinner-gap spin"></i> Carregando dados de assinaturas de IA...
-		</div>
+		<DataState kind="loading" message="Carregando dados de assinaturas de IA..." />
 	{:else if error}
-		<div class="error-state">
-			<i class="ph ph-warning-circle"></i>
-			{error}
-		</div>
+		<DataState kind="error" message={error} onretry={loadData} />
 	{:else}
 		<!-- KPI Summary Cards -->
 		{#if summary}
@@ -211,11 +195,14 @@
 					<div class="kpi-content">
 						<span class="kpi-label">Compromisso Fixo Mensal</span>
 						<div class="kpi-value-row">
-							<span class="kpi-value">{formatUsd(summary.total_monthly_cost_usd)}</span>
+							<span class="kpi-value">
+								<Money value={summary.total_monthly_cost_usd} currency="USD" />
+							</span>
 							<span class="kpi-subvalue">/mês</span>
 						</div>
 						<span class="kpi-hint">
-							{formatBrl(summary.total_monthly_cost_brl)} · {summary.total_recurring_plans} planos ativos
+							<Money value={summary.total_monthly_cost_brl} currency="BRL" /> · {summary.total_recurring_plans}
+							planos ativos
 						</span>
 					</div>
 				</div>
@@ -225,9 +212,21 @@
 					<div class="kpi-content">
 						<span class="kpi-label">Créditos Pré-Pagos Disponíveis</span>
 						<div class="kpi-value-row">
-							<span class="kpi-value">{formatUsd(summary.total_available_credits_usd)}</span>
+							<span class="kpi-value">
+								<Money value={summary.total_available_credits_usd} currency="USD" />
+							</span>
 						</div>
-						<span class="kpi-hint">{creditHint}</span>
+						<span class="kpi-hint">
+							{#if creditItems.length > 0}
+								{#each creditItems as item, idx (item.provider_key)}
+									{#if idx > 0}
+										·
+									{/if}{item.name}: <Money value={item.balance_usd} currency="USD" />
+								{/each}
+							{:else}
+								Sem créditos pré-pagos
+							{/if}
+						</span>
 					</div>
 				</div>
 
@@ -236,9 +235,21 @@
 					<div class="kpi-content">
 						<span class="kpi-label">Consumo no Mês Atual</span>
 						<div class="kpi-value-row">
-							<span class="kpi-value">{formatUsd(summary.total_month_spent_usd)}</span>
+							<span class="kpi-value">
+								<Money value={summary.total_month_spent_usd} currency="USD" />
+							</span>
 						</div>
-						<span class="kpi-hint">{spendHint}</span>
+						<span class="kpi-hint">
+							{#if spendItems.length > 0}
+								{#each spendItems as item, idx (item.provider_key)}
+									{#if idx > 0}
+										+
+									{/if}{item.name} (<Money value={item.month_spent_usd} currency="USD" />)
+								{/each}
+							{:else}
+								Sem consumo registrado
+							{/if}
+						</span>
 					</div>
 				</div>
 
@@ -249,7 +260,18 @@
 						<div class="kpi-value-row">
 							<span class="kpi-value date">{formatDate(summary.next_renewal_date)}</span>
 						</div>
-						<span class="kpi-hint">{nextRenewalHint}</span>
+						<span class="kpi-hint">
+							{#if !summary.next_renewal_date}
+								Nenhuma renovação agendada
+							{:else if nextRenewalMatch}
+								{nextRenewalMatch.name} (<Money
+									value={nextRenewalMatch.cost_usd}
+									currency="USD"
+								/>/mês)
+							{:else}
+								Próxima cobrança
+							{/if}
+						</span>
 					</div>
 				</div>
 			</section>
@@ -272,12 +294,12 @@
 							<span class="dot" style={getProviderBadgeColor(sub.provider_key)}></span>
 							<b>{sub.name}:</b>
 							{#if sub.balance_usd !== 0}
-								{formatUsd(sub.balance_usd)} saldo
+								<Money value={sub.balance_usd} currency="USD" /> saldo
 								{#if sub.month_spent_usd > 0}
-									(mês: {formatUsd(sub.month_spent_usd)})
+									(mês: <Money value={sub.month_spent_usd} currency="USD" />)
 								{/if}
 							{:else if sub.cost_usd > 0}
-								{sub.plan_name} ({formatUsd(sub.cost_usd)}/mês)
+								{sub.plan_name} (<Money value={sub.cost_usd} currency="USD" />/mês)
 							{:else}
 								{sub.plan_name}
 							{/if}
@@ -289,40 +311,21 @@
 
 		<!-- Tabs & Search -->
 		<div class="tabs-bar">
-			<div class="tab-buttons">
-				<button
-					class="tab-btn"
-					class:active={activeTab === 'all'}
-					onclick={() => (activeTab = 'all')}
-				>
-					Todos os Serviços ({subscriptions.length})
-				</button>
-				<button
-					class="tab-btn"
-					class:active={activeTab === 'agents'}
-					onclick={() => (activeTab = 'agents')}
-				>
-					Editores & Agentes
-				</button>
-				<button
-					class="tab-btn"
-					class:active={activeTab === 'apis'}
-					onclick={() => (activeTab = 'apis')}
-				>
-					APIs & Modelos
-				</button>
-				<button
-					class="tab-btn"
-					class:active={activeTab === 'pricing'}
-					onclick={() => (activeTab = 'pricing')}
-				>
-					Tabela de Preços por Token ({pricing.length})
-				</button>
-			</div>
+			<SegmentedTabs
+				items={aiTabs}
+				value={activeTab}
+				ariaLabel="Filtrar serviços de IA"
+				onchange={(next) => (activeTab = next)}
+			/>
 			{#if activeTab !== 'pricing'}
 				<div class="search-box">
-					<i class="ph ph-magnifying-glass"></i>
-					<input type="text" placeholder="Buscar serviço ou modelo..." bind:value={searchQuery} />
+					<i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+					<input
+						type="text"
+						aria-label="Buscar serviço ou modelo"
+						placeholder="Buscar serviço ou modelo..."
+						bind:value={searchQuery}
+					/>
 				</div>
 			{/if}
 		</div>
@@ -359,13 +362,13 @@
 								<td class="model-name"><b>{p.model_name}</b></td>
 								<td><span class="tag-context">{p.context_window || '—'}</span></td>
 								<td class="num">
-									{p.input_cache_hit_usd != null ? formatUsd(p.input_cache_hit_usd) : '—'}
+									<Money value={p.input_cache_hit_usd} currency="USD" privacy={false} />
 								</td>
 								<td class="num">
-									{p.input_cache_miss_usd != null ? formatUsd(p.input_cache_miss_usd) : '—'}
+									<Money value={p.input_cache_miss_usd} currency="USD" privacy={false} />
 								</td>
 								<td class="num highlight-out">
-									{p.output_usd != null ? formatUsd(p.output_usd) : '—'}
+									<Money value={p.output_usd} currency="USD" privacy={false} />
 								</td>
 								<td class="notes-col">{p.notes || ''}</td>
 							</tr>
@@ -397,11 +400,11 @@
 							<div class="plan-label">Plano: <b>{sub.plan_name}</b></div>
 							{#if sub.cost_usd > 0}
 								<div class="plan-cost">
-									<span class="cost-usd">{formatUsd(sub.cost_usd)}</span>
+									<span class="cost-usd"><Money value={sub.cost_usd} currency="USD" /></span>
 									<span class="cost-period">
 										/{sub.billing_cycle === 'annual' ? 'mês (anual)' : 'mês'}
 									</span>
-									<span class="cost-brl">({formatBrl(sub.cost_brl)})</span>
+									<span class="cost-brl">(<Money value={sub.cost_brl} currency="BRL" />)</span>
 								</div>
 							{:else}
 								<div class="plan-cost free">
@@ -418,20 +421,22 @@
 								<div class="metric-row">
 									<span class="m-label">Saldo Pré-Pago:</span>
 									<span class="m-val balance" class:negative={sub.balance_usd < 0}>
-										{formatUsd(sub.balance_usd)}
+										<Money value={sub.balance_usd} currency="USD" />
 									</span>
 								</div>
 							{/if}
 							{#if sub.month_spent_usd > 0}
 								<div class="metric-row">
 									<span class="m-label">Gasto no Mês:</span>
-									<span class="m-val spend">{formatUsd(sub.month_spent_usd)}</span>
+									<span class="m-val spend">
+										<Money value={sub.month_spent_usd} currency="USD" />
+									</span>
 								</div>
 							{/if}
 							{#if sub.total_spent_usd > 0}
 								<div class="metric-row">
 									<span class="m-label">Total Histórico:</span>
-									<span class="m-val">{formatUsd(sub.total_spent_usd)}</span>
+									<span class="m-val"><Money value={sub.total_spent_usd} currency="USD" /></span>
 								</div>
 							{/if}
 							{#if sub.renewal_date}
@@ -487,7 +492,9 @@
 			>
 				<div class="modal-header">
 					<h3>Atualizar {editingSub.name}</h3>
-					<button class="btn-close" onclick={closeEditModal}>×</button>
+					<button type="button" class="btn-close" aria-label="Fechar" onclick={closeEditModal}>
+						×
+					</button>
 				</div>
 				<div class="modal-body">
 					<div class="form-group">
@@ -533,41 +540,6 @@
 			opacity: 1;
 			transform: translateY(0);
 		}
-	}
-
-	.ai-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		gap: 16px;
-		flex-wrap: wrap;
-	}
-
-	.breadcrumb {
-		font-size: 13px;
-		color: var(--mut);
-		margin-bottom: 4px;
-	}
-
-	.page-title {
-		font:
-			600 32px/1.2 'Source Serif 4',
-			serif;
-		margin: 0 0 6px 0;
-		color: var(--ink);
-	}
-
-	.page-subtitle {
-		margin: 0;
-		font-size: 15px;
-		color: var(--mut);
-		max-width: 65ch;
-	}
-
-	.header-actions {
-		display: flex;
-		align-items: center;
-		gap: 12px;
 	}
 
 	.rate-badge {
@@ -754,34 +726,6 @@
 		border-bottom: 1px solid var(--ln);
 		padding-bottom: 12px;
 		flex-wrap: wrap;
-	}
-
-	.tab-buttons {
-		display: flex;
-		gap: 8px;
-	}
-
-	.tab-btn {
-		background: transparent;
-		border: 0;
-		padding: 8px 14px;
-		font-size: 14px;
-		font-weight: 500;
-		color: var(--mut);
-		cursor: pointer;
-		border-radius: 8px;
-		transition: all 0.15s ease;
-	}
-
-	.tab-btn:hover {
-		color: var(--ink);
-		background: var(--sf2);
-	}
-
-	.tab-btn.active {
-		background: var(--sun);
-		color: var(--onsun);
-		font-weight: 600;
 	}
 
 	.search-box {
@@ -1229,27 +1173,5 @@
 	.btn-save:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
-	}
-
-	.loading-state,
-	.error-state {
-		text-align: center;
-		padding: 48px;
-		font-size: 15px;
-		color: var(--mut);
-	}
-
-	.error-state {
-		color: #dc2626;
-	}
-
-	.spin {
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		100% {
-			transform: rotate(360deg);
-		}
 	}
 </style>

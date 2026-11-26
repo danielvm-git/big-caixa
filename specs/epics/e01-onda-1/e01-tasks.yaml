@@ -1,0 +1,47 @@
+type: tasks
+context: big-caixa/onda-1
+epic: e01
+stories:
+  e01s01:
+    - id: T1.1
+      title: 'Add money formatting helper and unit tests (TDD red-green)'
+      files:
+        - src/lib/ui/money.ts
+        - tests/ui-money.test.ts
+      verify: 'npx vitest run tests/ui-money.test.ts'
+    - id: T1.2
+      title: 'Create Money, PageHeader, DataState, SegmentedTabs Svelte components'
+      files:
+        - src/lib/ui/Money.svelte
+        - src/lib/ui/PageHeader.svelte
+        - src/lib/ui/DataState.svelte
+        - src/lib/ui/SegmentedTabs.svelte
+        - src/lib/ui/index.ts
+      verify: 'npm run typecheck && npm run lint && npm test'
+  e01s02:
+    - id: T2.1
+      title: 'Migrate EntradasSpreadsheet to PageHeader, DataState, SegmentedTabs and Money'
+      files:
+        - src/lib/livro/EntradasSpreadsheet.svelte
+      verify: 'npm run typecheck && npm run lint'
+    - id: T2.2
+      title: 'Migrate DevemView to PageHeader, DataState, SegmentedTabs and Money'
+      files:
+        - src/lib/livro/DevemView.svelte
+      verify: 'npm run typecheck && npm run lint && npm test'
+  e01s03:
+    - id: T3.1
+      title: 'Migrate AiSubscriptionsView to PageHeader, DataState, SegmentedTabs and Money'
+      files:
+        - src/lib/livro/AiSubscriptionsView.svelte
+      verify: 'npm run typecheck && npm run lint'
+    - id: T3.2
+      title: 'Migrate ViagensFeriasView to PageHeader, DataState, SegmentedTabs and Money'
+      files:
+        - src/lib/livro/ViagensFeriasView.svelte
+      verify: 'npm run typecheck && npm run lint'
+    - id: T3.3
+      title: 'Add hygiene & privacy regression tests for the 4 migrated views'
+      files:
+        - tests/ui-views-hygiene.test.ts
+      verify: 'npx vitest run tests/ui-views-hygiene.test.ts && bash scripts/preflight.sh && npm run test:e2e'

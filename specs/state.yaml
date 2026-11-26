@@ -1,15 +1,39 @@
 version: 1
-current_phase: step_4_complete
-active_branch: main
+active_flow: build_epic
+active_epic: e01
+active_branch: feat/e01-onda-1-ui-primitives
 last_merged_pr: 5
-commit_sha: b83e36e
-status: green
+commit_sha: 2248337
+status: pr_ready
+epic_cycle:
+  epic: e01
+  story: e01s03
+  step: 8
+  story_bcps: 8
+  audit_result: pass
+  review_result: addressed
 steps:
   step_1_audit_and_cleanup: done
   step_2_deferred_items: done
   step_3_neon_and_cloud_sync: done
   step_4_strangler_fig_phase2: done
+  e01_onda_1_ui_primitives: done
+handoff:
+  next_skill: release-branch
+  context: 'All 3 stories of Epic e01 (Onda 1) built, verified, audited, and code-reviewed on feat/e01-onda-1-ui-primitives. Awaiting user approval for push/PR/merge.'
 decisions:
   - id: D-001
     gate: strangler_fig_phase2
     reason: Extracted formatting, mock fixtures, and core views into dedicated modules to shrink monolithic book.svelte.ts and LivroApp.svelte.
+  - id: D-002
+    gate: planning_spine_e01
+    reason: Created release-plan.yaml, execution-status.yaml, e01-onda-1 epic capsule, tasks with verify commands, and THREAT_MODEL.md autonomously per standing approval.
+  - id: D-003
+    gate: kickoff_branch_e01
+    reason: Created feature branch feat/e01-onda-1-ui-primitives from clean, green main (2248337) to isolate all epic commits without touching main.
+  - id: D-004
+    gate: audit_code_e01
+    reason: Self-audit passed all sections (security, types, scope, Boy Scout, F.I.R.S.T tests); advancing to independent request-review.
+  - id: D-005
+    gate: respond_review_e01
+    reason: Fixed both Critical privacy leaks (AiSubscriptionsView KPI hints and EntradaInspectorDrawer), formatMoney edge cases (Infinity/-0/near-zero rounding), SegmentedTabs ARIA semantics/focus-visible, and DevemView WCAG AA tokens. Stopped at release-branch per outward-facing gate.

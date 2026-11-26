@@ -7,12 +7,16 @@
 		TipoEntradaDoc
 	} from '$lib/read-model/types';
 	import EntradaInspectorDrawer from './EntradaInspectorDrawer.svelte';
+	import { DataState, Money, PageHeader, SegmentedTabs } from '$lib/ui';
 
 	const agora = new Date();
 	const anoCorrente = agora.getFullYear();
 	const mesCorrenteNum = agora.getMonth() + 1;
 	let anoAtual = $state(anoCorrente);
-	let anosDisponiveis = [anoCorrente, anoCorrente - 1, anoCorrente - 2];
+	const yearOptions = [anoCorrente, anoCorrente - 1, anoCorrente - 2].map((ano) => ({
+		value: ano,
+		label: String(ano)
+	}));
 	let entradas = $state<EntradaMensalDoc[]>([]);
 	let tipos = $state<TipoEntradaDoc[]>([]);
 	let carregando = $state(true);
@@ -40,11 +44,6 @@
 		{ k: 'nov', label: 'novembro', num: 11 },
 		{ k: 'dez', label: 'dezembro', num: 12 }
 	] as const;
-
-	const formatCell = (val: number) => {
-		if (!val || val === 0) return '—';
-		return val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-	};
 
 	async function carregarDados() {
 		try {
@@ -129,33 +128,20 @@
 </script>
 
 <div class="sheet-container">
-	<!-- Cabeçalho Executivo -->
-	<div class="sheet-header">
-		<div>
-			<div class="sheet-pretitle">Planilha Contábil de Receitas</div>
-			<h1 class="serif sheet-title">Entradas tipo por mês</h1>
-			<p class="sheet-desc">
-				Conferência matricial de entradas e receitas. Clique em qualquer valor ou mês para
-				inspecionar e reclassificar lançamentos.
-			</p>
-		</div>
-
-		<div class="sheet-actions">
-			<!-- Seletor de Ano -->
-			<div class="year-selector">
-				{#each anosDisponiveis as ano}
-					<button
-						class="btn-year"
-						class:active={anoAtual === ano}
-						onclick={() => {
-							anoAtual = ano;
-							void carregarDados();
-						}}
-					>
-						{ano}
-					</button>
-				{/each}
-			</div>
+	<PageHeader
+		title="Entradas tipo por mês"
+		subtitle="Conferência matricial de entradas e receitas. Clique em qualquer valor ou mês para inspecionar e reclassificar lançamentos."
+	>
+		{#snippet actions()}
+			<SegmentedTabs
+				items={yearOptions}
+				value={anoAtual}
+				ariaLabel="Ano de referência"
+				onchange={(ano) => {
+					anoAtual = ano;
+					void carregarDados();
+				}}
+			/>
 
 			<button
 				class="btn-action"
@@ -167,13 +153,17 @@
 			<button class="btn-action-alt" onclick={abrirInspecaoPendentes}>
 				<i class="ph ph-tag"></i>A classificar
 			</button>
-		</div>
-	</div>
+		{/snippet}
+	</PageHeader>
 
 	{#if carregando}
-		<div class="sheet-loading">Carregando planilha de receitas…</div>
+		<DataState kind="loading" message="Carregando planilha de receitas…" />
 	{:else if erro}
-		<div class="sheet-error">Não foi possível carregar as entradas do livro contábil.</div>
+		<DataState
+			kind="error"
+			message="Não foi possível carregar as entradas do livro contábil."
+			onretry={carregarDados}
+		/>
 	{:else}
 		<!-- Grade da Planilha Fiel à Imagem -->
 		<div class="table-scroll-wrap">
@@ -223,15 +213,15 @@
 										class:has-val={val > 0}
 										onclick={() => val > 0 && abrirInspecaoCelula(row, m.num, m.label)}
 									>
-										<span class="cell-num">{formatCell(val)}</span>
+										<Money value={val} symbol={false} zeroFallback="—" />
 									</td>
 								{/each}
 
 								<td class="td-total">
-									<span class="cell-total">{formatCell(row.total)}</span>
+									<Money value={row.total} symbol={false} zeroFallback="—" />
 								</td>
 								<td class="td-media">
-									<span class="cell-media">{formatCell((row.total || 0) / divisorMedia)}</span>
+									<Money value={(row.total || 0) / divisorMedia} symbol={false} zeroFallback="—" />
 								</td>
 							</tr>
 						{/each}
@@ -243,14 +233,14 @@
 						<td colspan="2" class="td-footer-label">Total do mês</td>
 						{#each MESES as m}
 							<td class="td-footer-num">
-								<span class="footer-num">{formatCell(totaisMes[m.k] || 0)}</span>
+								<Money value={totaisMes[m.k] || 0} symbol={false} zeroFallback="—" />
 							</td>
 						{/each}
 						<td class="td-footer-total">
-							<span class="footer-grand-total">{formatCell(totalGeralAno)}</span>
+							<Money value={totalGeralAno} symbol={false} zeroFallback="—" />
 						</td>
 						<td class="td-footer-media">
-							<span class="footer-grand-media">{formatCell(totalGeralAno / divisorMedia)}</span>
+							<Money value={totalGeralAno / divisorMedia} symbol={false} zeroFallback="—" />
 						</td>
 					</tr>
 				</tfoot>
@@ -286,62 +276,6 @@
 		gap: 20px;
 		animation: up 0.3s ease-out;
 	}
-	.sheet-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-end;
-		gap: 16px;
-		flex-wrap: wrap;
-	}
-	.sheet-pretitle {
-		font-size: 13px;
-		color: var(--mut);
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-		font-weight: 600;
-	}
-	.sheet-title {
-		margin: 4px 0 0;
-		font-size: 32px;
-		line-height: 1.2;
-		font-weight: 600;
-	}
-	.sheet-desc {
-		margin: 6px 0 0;
-		color: var(--mut);
-		font-size: 14px;
-		max-width: 60ch;
-	}
-	.sheet-actions {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		flex-wrap: wrap;
-	}
-	.year-selector {
-		display: flex;
-		background: var(--sf);
-		border: 1px solid var(--ln);
-		border-radius: 8px;
-		padding: 2px;
-	}
-	.btn-year {
-		border: 0;
-		background: transparent;
-		color: var(--mut);
-		font-size: 13px;
-		font-weight: 500;
-		padding: 5px 12px;
-		border-radius: 6px;
-		cursor: pointer;
-		transition: all 0.15s;
-	}
-	.btn-year.active {
-		background: var(--sf2);
-		color: var(--ink);
-		font-weight: 600;
-		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-	}
 	.btn-action {
 		display: inline-flex;
 		align-items: center;
@@ -373,19 +307,6 @@
 	}
 	.btn-action-alt:hover {
 		background: #ffecb3;
-	}
-	.sheet-loading,
-	.sheet-error {
-		padding: 48px;
-		text-align: center;
-		font-size: 15px;
-		color: var(--mut);
-		background: var(--sf);
-		border-radius: 12px;
-		border: 1px solid var(--ln);
-	}
-	.sheet-error {
-		color: var(--terra);
 	}
 
 	/* Tabela estilo planilha */
@@ -517,18 +438,12 @@
 		color: #1b5e20;
 		font-weight: 600;
 	}
-	.cell-num {
-		display: inline-block;
-		width: 100%;
-	}
 	.td-total {
 		text-align: right;
 		font-variant-numeric: tabular-nums;
 		font-weight: 600;
 		background: var(--sf2);
 		font-size: 12px;
-	}
-	.cell-total {
 		color: var(--ink);
 	}
 	.td-media {
@@ -537,8 +452,6 @@
 		font-weight: 500;
 		background: rgba(0, 0, 0, 0.02);
 		font-size: 11.5px;
-	}
-	.cell-media {
 		color: var(--mut);
 	}
 
