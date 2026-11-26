@@ -162,7 +162,13 @@
 							onclick={() => (vinculoSelecionadoId = v.id)}
 							role="button"
 							tabindex="0"
-							onkeydown={(e) => e.key === 'Enter' && (vinculoSelecionadoId = v.id)}
+							aria-pressed={vinculoAtivo?.id === v.id}
+							onkeydown={(e) => {
+								if (e.key === 'Enter' || e.key === ' ') {
+									e.preventDefault();
+									vinculoSelecionadoId = v.id;
+								}
+							}}
 						>
 							<div class="loan-card-top">
 								<div>
@@ -365,11 +371,11 @@
 	}
 
 	.kpi-value.positive {
-		color: #10b981;
+		color: var(--moss);
 	}
 
 	.kpi-value.alert {
-		color: #d97706;
+		color: var(--terra);
 	}
 
 	.kpi-sub {
@@ -680,7 +686,7 @@
 	}
 
 	.td-val.positive {
-		color: #10b981;
+		color: var(--moss);
 	}
 
 	.history-table tfoot td {

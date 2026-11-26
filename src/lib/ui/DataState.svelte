@@ -90,6 +90,11 @@
 		cursor: pointer;
 	}
 
+	.ui-data-state-retry:focus-visible {
+		outline: 2px solid var(--ink);
+		outline-offset: 2px;
+	}
+
 	.ui-spin {
 		animation: ui-state-spin 1s linear infinite;
 	}

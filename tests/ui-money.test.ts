@@ -39,4 +39,14 @@ describe('formatMoney (src/lib/ui/money)', () => {
 		expect(formatMoney(-300, { signed: true })).toBe('−R$ 300,00');
 		expect(formatMoney(0, { signed: true })).toBe('R$ 0,00');
 	});
+
+	it('normalizes non-finite numbers, -0, and near-zero negative rounding', () => {
+		expect(formatMoney(Infinity)).toBe('—');
+		expect(formatMoney(-Infinity)).toBe('—');
+		expect(formatMoney(-0)).toBe('R$ 0,00');
+		expect(formatMoney(-0.001)).toBe('R$ 0,00');
+		expect(formatMoney(-0.001, { zeroFallback: '—' })).toBe('—');
+		expect(formatMoney(-0.4, { precision: 'macro' })).toBe('R$ 0');
+		expect(formatMoney(0.001, { signed: true })).toBe('R$ 0,00');
+	});
 });

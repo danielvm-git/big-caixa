@@ -12,9 +12,9 @@ export interface MoneyFormatOptions {
 	symbol?: boolean;
 	/** Se true, adiciona prefixo "+" para valores positivos. Padrão: false. */
 	signed?: boolean;
-	/** Texto exibido quando o valor é exatamente 0. */
+	/** Texto exibido quando o valor arredondado é exatamente 0. */
 	zeroFallback?: string;
-	/** Texto exibido para null, undefined ou NaN. Padrão: "—". */
+	/** Texto exibido para null, undefined, NaN ou Infinity. Padrão: "—". */
 	fallback?: string;
 }
 
@@ -31,22 +31,26 @@ export function formatMoney(
 		fallback = '—'
 	} = options;
 
-	if (value === null || value === undefined || Number.isNaN(value)) {
+	if (value === null || value === undefined || !Number.isFinite(value)) {
 		return fallback;
 	}
 
-	if (value === 0 && zeroFallback !== undefined) {
+	const digits = precision === 'macro' ? 0 : 2;
+	const factor = 10 ** digits;
+	const rounded = Math.round(value * factor) / factor;
+	const normalized = Object.is(rounded, -0) || rounded === 0 ? 0 : rounded;
+
+	if (normalized === 0 && zeroFallback !== undefined) {
 		return zeroFallback;
 	}
 
-	const digits = precision === 'macro' ? 0 : 2;
 	const locale = currency === 'USD' ? 'en-US' : 'pt-BR';
-	const formattedAbs = Math.abs(value).toLocaleString(locale, {
+	const formattedAbs = Math.abs(normalized).toLocaleString(locale, {
 		minimumFractionDigits: digits,
 		maximumFractionDigits: digits
 	});
 
-	const sign = value < 0 ? '−' : signed && value > 0 ? '+' : '';
+	const sign = normalized < 0 ? '−' : signed && normalized > 0 ? '+' : '';
 	const prefix = !symbol ? '' : currency === 'USD' ? '$' : 'R$ ';
 
 	return `${sign}${prefix}${formattedAbs}`;

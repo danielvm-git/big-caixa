@@ -274,7 +274,7 @@
 						<span class="meta-label">Custo Pessoal no Livro</span>
 						<b class="meta-val" class:free={selectedTrip.empresa === 1}>
 							{#if selectedTrip.empresa === 1}
-								R$ 0,00 (Empresa paga)
+								<Money value={0} /> (Empresa paga)
 							{:else}
 								<Money value={selectedTrip.total_gasto || 0} />
 							{/if}

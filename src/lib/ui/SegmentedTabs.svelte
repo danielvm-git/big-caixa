@@ -18,12 +18,11 @@
 	let { items, value, onchange, ariaLabel = 'Opções' }: Props = $props();
 </script>
 
-<div class="ui-segmented" role="tablist" aria-label={ariaLabel}>
+<div class="ui-segmented" role="group" aria-label={ariaLabel}>
 	{#each items as item (item.value)}
 		<button
 			type="button"
-			role="tab"
-			aria-selected={value === item.value}
+			aria-pressed={value === item.value}
 			class="ui-segmented-btn"
 			class:active={value === item.value}
 			onclick={() => onchange(item.value)}
@@ -70,6 +69,11 @@
 
 	.ui-segmented-btn:hover {
 		color: var(--ink);
+	}
+
+	.ui-segmented-btn:focus-visible {
+		outline: 2px solid var(--sun);
+		outline-offset: 2px;
 	}
 
 	.ui-segmented-btn.active {

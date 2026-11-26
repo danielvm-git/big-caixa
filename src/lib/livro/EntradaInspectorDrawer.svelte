@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { reclassificarEntrada } from '$lib/read-model/client';
 	import type { EntradaTransacaoDoc, TipoEntradaDoc } from '$lib/read-model/types';
+	import { Money } from '$lib/ui';
 
 	let {
 		open = false,
@@ -28,9 +29,6 @@
 	let salvandoId = $state<string | null>(null);
 	let msgSucesso = $state('');
 	let toastTimer: ReturnType<typeof setTimeout> | null = null;
-
-	const formatBRL = (val: number) =>
-		val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 	const formatDataBR = (iso?: string) => (iso ? iso.split('-').reverse().join('/') : '—');
 
@@ -91,7 +89,7 @@
 								[{periodo}]
 							</span>{/if}
 						{filtradas.length} lançamento{filtradas.length === 1 ? '' : 's'} · Total:
-						<b>{formatBRL(totalFiltrado)}</b>
+						<b><Money value={totalFiltrado} /></b>
 					</div>
 				</div>
 				<button class="btn-close" onclick={onclose} aria-label="Fechar">✕</button>
@@ -140,7 +138,7 @@
 								</div>
 
 								<div class="tx-right">
-									<div class="tx-amount">{formatBRL(t.valor)}</div>
+									<div class="tx-amount"><Money value={t.valor} /></div>
 									<div class="tx-select-wrap">
 										<select
 											value={t.tipo_id}

@@ -213,20 +213,15 @@
 										class:has-val={val > 0}
 										onclick={() => val > 0 && abrirInspecaoCelula(row, m.num, m.label)}
 									>
-										<Money value={val} symbol={false} zeroFallback="—" class="cell-num" />
+										<Money value={val} symbol={false} zeroFallback="—" />
 									</td>
 								{/each}
 
 								<td class="td-total">
-									<Money value={row.total} symbol={false} zeroFallback="—" class="cell-total" />
+									<Money value={row.total} symbol={false} zeroFallback="—" />
 								</td>
 								<td class="td-media">
-									<Money
-										value={(row.total || 0) / divisorMedia}
-										symbol={false}
-										zeroFallback="—"
-										class="cell-media"
-									/>
+									<Money value={(row.total || 0) / divisorMedia} symbol={false} zeroFallback="—" />
 								</td>
 							</tr>
 						{/each}
@@ -238,29 +233,14 @@
 						<td colspan="2" class="td-footer-label">Total do mês</td>
 						{#each MESES as m}
 							<td class="td-footer-num">
-								<Money
-									value={totaisMes[m.k] || 0}
-									symbol={false}
-									zeroFallback="—"
-									class="footer-num"
-								/>
+								<Money value={totaisMes[m.k] || 0} symbol={false} zeroFallback="—" />
 							</td>
 						{/each}
 						<td class="td-footer-total">
-							<Money
-								value={totalGeralAno}
-								symbol={false}
-								zeroFallback="—"
-								class="footer-grand-total"
-							/>
+							<Money value={totalGeralAno} symbol={false} zeroFallback="—" />
 						</td>
 						<td class="td-footer-media">
-							<Money
-								value={totalGeralAno / divisorMedia}
-								symbol={false}
-								zeroFallback="—"
-								class="footer-grand-media"
-							/>
+							<Money value={totalGeralAno / divisorMedia} symbol={false} zeroFallback="—" />
 						</td>
 					</tr>
 				</tfoot>

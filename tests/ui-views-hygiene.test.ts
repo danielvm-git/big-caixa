@@ -9,6 +9,8 @@ const MIGRATED_VIEWS = [
 	'src/lib/livro/ViagensFeriasView.svelte'
 ];
 
+const PRIVACY_SENSITIVE_DRAWERS = ['src/lib/livro/EntradaInspectorDrawer.svelte'];
+
 describe('Onda 1 UI primitives hygiene & privacy regression', () => {
 	for (const relPath of MIGRATED_VIEWS) {
 		const content = readFileSync(resolve(process.cwd(), relPath), 'utf8');
@@ -21,9 +23,20 @@ describe('Onda 1 UI primitives hygiene & privacy regression', () => {
 			expect(content).toContain('<Money');
 		});
 
-		it(`${relPath} does not duplicate topbar breadcrumbs or local currency formatters`, () => {
+		it(`${relPath} does not duplicate topbar breadcrumbs or bypass <Money />`, () => {
 			expect(content).not.toMatch(/class="breadcrumb"/);
 			expect(content).not.toMatch(/new Intl\.NumberFormat/);
+			expect(content).not.toMatch(/\bformatMoney\(/);
+		});
+	}
+
+	for (const relPath of PRIVACY_SENSITIVE_DRAWERS) {
+		const content = readFileSync(resolve(process.cwd(), relPath), 'utf8');
+
+		it(`${relPath} renders monetary values via <Money /> without local currency formatters`, () => {
+			expect(content).toContain('<Money');
+			expect(content).not.toMatch(/formatBRL/);
+			expect(content).not.toMatch(/\bformatMoney\(/);
 		});
 	}
 

@@ -7,7 +7,7 @@
 		atualizarAiSubscription
 	} from '$lib/read-model/client';
 	import type { AiSubscriptionDoc, AiPricingDoc, AiSummaryDoc } from '$lib/read-model/types';
-	import { DataState, Money, PageHeader, SegmentedTabs, formatMoney } from '$lib/ui';
+	import { DataState, Money, PageHeader, SegmentedTabs } from '$lib/ui';
 
 	let subscriptions = $state<AiSubscriptionDoc[]>([]);
 	let pricing = $state<AiPricingDoc[]>([]);
@@ -123,31 +123,24 @@
 		return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
 	}
 
-	let creditHint = $derived(
+	let creditItems = $derived(
 		subscriptions
 			.filter((s) => s.balance_usd > 0)
 			.sort((a, b) => b.balance_usd - a.balance_usd)
 			.slice(0, 3)
-			.map((s) => `${s.name}: ${formatMoney(s.balance_usd, { currency: 'USD' })}`)
-			.join(' · ') || 'Sem créditos pré-pagos'
 	);
 
-	let spendHint = $derived(
+	let spendItems = $derived(
 		subscriptions
 			.filter((s) => s.month_spent_usd > 0)
 			.sort((a, b) => b.month_spent_usd - a.month_spent_usd)
 			.slice(0, 2)
-			.map((s) => `${s.name} (${formatMoney(s.month_spent_usd, { currency: 'USD' })})`)
-			.join(' + ') || 'Sem consumo registrado'
 	);
 
-	let nextRenewalHint = $derived.by(() => {
+	let nextRenewalMatch = $derived.by(() => {
 		const nextDate = summary?.next_renewal_date?.slice(0, 10);
-		if (!nextDate) return 'Nenhuma renovação agendada';
-		const match = subscriptions.find((s) => s.renewal_date?.slice(0, 10) === nextDate);
-		return match
-			? `${match.name} (${formatMoney(match.cost_usd, { currency: 'USD' })}/mês)`
-			: 'Próxima cobrança';
+		if (!nextDate) return null;
+		return subscriptions.find((s) => s.renewal_date?.slice(0, 10) === nextDate) ?? null;
 	});
 
 	function getProviderBadgeColor(key: string) {
@@ -223,7 +216,17 @@
 								<Money value={summary.total_available_credits_usd} currency="USD" />
 							</span>
 						</div>
-						<span class="kpi-hint">{creditHint}</span>
+						<span class="kpi-hint">
+							{#if creditItems.length > 0}
+								{#each creditItems as item, idx (item.provider_key)}
+									{#if idx > 0}
+										·
+									{/if}{item.name}: <Money value={item.balance_usd} currency="USD" />
+								{/each}
+							{:else}
+								Sem créditos pré-pagos
+							{/if}
+						</span>
 					</div>
 				</div>
 
@@ -236,7 +239,17 @@
 								<Money value={summary.total_month_spent_usd} currency="USD" />
 							</span>
 						</div>
-						<span class="kpi-hint">{spendHint}</span>
+						<span class="kpi-hint">
+							{#if spendItems.length > 0}
+								{#each spendItems as item, idx (item.provider_key)}
+									{#if idx > 0}
+										+
+									{/if}{item.name} (<Money value={item.month_spent_usd} currency="USD" />)
+								{/each}
+							{:else}
+								Sem consumo registrado
+							{/if}
+						</span>
 					</div>
 				</div>
 
@@ -247,7 +260,18 @@
 						<div class="kpi-value-row">
 							<span class="kpi-value date">{formatDate(summary.next_renewal_date)}</span>
 						</div>
-						<span class="kpi-hint">{nextRenewalHint}</span>
+						<span class="kpi-hint">
+							{#if !summary.next_renewal_date}
+								Nenhuma renovação agendada
+							{:else if nextRenewalMatch}
+								{nextRenewalMatch.name} (<Money
+									value={nextRenewalMatch.cost_usd}
+									currency="USD"
+								/>/mês)
+							{:else}
+								Próxima cobrança
+							{/if}
+						</span>
 					</div>
 				</div>
 			</section>
@@ -295,8 +319,13 @@
 			/>
 			{#if activeTab !== 'pricing'}
 				<div class="search-box">
-					<i class="ph ph-magnifying-glass"></i>
-					<input type="text" placeholder="Buscar serviço ou modelo..." bind:value={searchQuery} />
+					<i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+					<input
+						type="text"
+						aria-label="Buscar serviço ou modelo"
+						placeholder="Buscar serviço ou modelo..."
+						bind:value={searchQuery}
+					/>
 				</div>
 			{/if}
 		</div>
@@ -463,7 +492,9 @@
 			>
 				<div class="modal-header">
 					<h3>Atualizar {editingSub.name}</h3>
-					<button class="btn-close" onclick={closeEditModal}>×</button>
+					<button type="button" class="btn-close" aria-label="Fechar" onclick={closeEditModal}>
+						×
+					</button>
 				</div>
 				<div class="modal-body">
 					<div class="form-group">
