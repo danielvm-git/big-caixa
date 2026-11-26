@@ -5,6 +5,7 @@ import {
 	CATEGORIAS,
 	CONTAS,
 	ESCOPOS,
+	MESES,
 	PENDENTE,
 	PESSOAS,
 	blocoDe,
@@ -81,6 +82,7 @@ const PATH = {
 };
 
 const ROUTE_CASA = new Set(['mapa', 'pessoas', 'pessoa', 'empregados', 'custo', 'devem']);
+const LEDGER_ROUTES = new Set(['hoje', 'visao', 'fluxo', 'mes', 'compras', 'ano', 'metas']);
 
 export class Book {
 	setState(update, cb = undefined) {
@@ -429,7 +431,7 @@ export class Book {
 	sankey() {
 		if (this.state.ledger) {
 			const keys = this.chavesAtivas();
-			const links = keys.flatMap((k) => this.state.ledger.sankey[k] ?? []);
+			const links = keys.flatMap((k) => this.state.ledger.sankey?.[k] ?? []);
 			return desenharSankey(
 				links,
 				(v) => this.R(v, true),
@@ -599,16 +601,17 @@ export class Book {
 					['fluxo', 'Fluxo de caixa'],
 					['mes', 'Mês e categorias'],
 					['compras', 'Compras e lançamentos'],
-					['entradas', 'Entradas tipo (Planilha)']
+					['entradas', 'Entradas contábeis']
 				]
 			},
 			{
 				id: 'viver',
-				label: 'Viver',
+				label: 'Vida & Compromissos',
 				ic: 'ph ph-airplane-tilt',
 				subs: [
 					['viagens', 'Viagens e férias'],
-					['projetos', 'Projetos']
+					['ia', 'Assinaturas & IA'],
+					['metas', '50/30/20 e metas']
 				]
 			},
 			{
@@ -618,28 +621,17 @@ export class Book {
 				subs: [
 					['mapa', 'Mapa da casa'],
 					['pessoas', 'Pessoas'],
-					['empregados', 'Empregados'],
 					['custo', 'Custo e pagamentos'],
 					['devem', 'Quem deve a quem']
 				]
 			},
 			{
-				id: 'planejar',
-				label: 'Planejar',
-				ic: 'ph ph-compass',
-				subs: [
-					['ano', 'Ano e projeção'],
-					['metas', '50/30/20 e metas']
-				]
-			},
-			{
 				id: 'cuidar',
-				label: 'Cuidar',
-				ic: 'ph ph-heartbeat',
+				label: 'Operação',
+				ic: 'ph ph-wrench',
 				subs: [
-					['ia', 'Assinaturas & APIs de IA'],
-					['importar', 'Importar'],
 					['pendencias', 'Pendências'],
+					['importar', 'Importar'],
 					['regras', 'Regras'],
 					['referencia', 'Referência ONU']
 				]
@@ -647,7 +639,12 @@ export class Book {
 		];
 		const momOf =
 			MOM.find((m) => m.subs.some((x) => x[0] === route)) ??
-			(ROUTE_CASA.has(route) ? MOM.find((m) => m.id === 'casa') : undefined);
+			(ROUTE_CASA.has(route) ? MOM.find((m) => m.id === 'casa') : undefined) ??
+			(route === 'ano' ? MOM.find((m) => m.id === 'entender') : undefined) ??
+			(route === 'projetos' ? MOM.find((m) => m.id === 'viver') : undefined);
+		const fecharMesIdx = s.ledger ? (s.ledger.month > 1 ? s.ledger.month - 2 : 11) : 9;
+		const fecharMesNome = MESES[fecharMesIdx] ?? 'mês';
+		const fecharMesLabel = `Fechar ${fecharMesNome}`;
 		const nav = MOM.map((m, i) => ({
 			label: m.label,
 			ic: m.ic,
@@ -1114,7 +1111,7 @@ export class Book {
 			go: () => this.set({ trip: k })
 		}));
 		if (s.ledger) {
-			const vgs = s.ledger.viagens;
+			const vgs = s.ledger.viagens || [];
 			const tripId = (() => {
 				const hit = vgs.find((v) => v.chave === s.trip || String(v.id) === s.trip);
 				return hit
@@ -1706,6 +1703,9 @@ export class Book {
 				if (r) this.open(r);
 			},
 			crumb: (momOf ? momOf.label + ' › ' : '') + this.title(route),
+			showLedgerContext: LEDGER_ROUTES.has(route),
+			fecharMesNome,
+			fecharMesLabel,
 			perLabel: PER[s.per],
 			escLabel: ESC[s.esc],
 			baseLabel: s.base ? 'Competência' : 'Caixa',

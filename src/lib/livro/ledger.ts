@@ -471,7 +471,7 @@ export function metas503020(
 	}
 	const pendente = porBloco.pendente ?? 0;
 	const blocos = (
-		ledger.blocos.length
+		ledger.blocos?.length
 			? ledger.blocos
 			: ([
 					{ id: 'necessidade', nome: 'Necessidade', meta_pct: 50, tipo_meta: 'teto', cor: '' },

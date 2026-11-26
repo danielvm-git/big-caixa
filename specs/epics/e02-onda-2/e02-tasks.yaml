@@ -1,0 +1,41 @@
+type: tasks
+context: big-caixa/onda-2
+epic: e02
+stories:
+  e02s01:
+    - id: T1.1
+      title: 'Create LedgerContextBar component in src/lib/ui/ and test unitarily'
+      files:
+        - src/lib/ui/LedgerContextBar.svelte
+        - src/lib/ui/index.ts
+      verify: 'npm run typecheck && npm run lint'
+    - id: T1.2
+      title: 'Integrate LedgerContextBar into LivroApp.svelte, showing only on ledger-sensitive routes'
+      files:
+        - src/lib/livro/LivroApp.svelte
+        - src/lib/livro/book.svelte.ts
+      verify: 'npm run typecheck && npm run lint && npm test'
+  e02s02:
+    - id: T2.1
+      title: 'Reorganize MOM into 5 pillars, move /ia to viver, remove /projetos from sidebar, remove Ver no celular'
+      files:
+        - src/lib/livro/book.svelte.ts
+        - src/lib/livro/LivroApp.svelte
+      verify: 'npm run typecheck && npm run lint && npm test'
+    - id: T2.2
+      title: 'Implement dynamic fecharMesLabel and fecharMesNome in book.svelte.ts and LivroApp.svelte'
+      files:
+        - src/lib/livro/book.svelte.ts
+        - src/lib/livro/LivroApp.svelte
+      verify: 'npm run typecheck && npm run lint && npm test'
+  e02s03:
+    - id: T3.1
+      title: 'Add tests for LedgerContextBar and sidebar taxonomy hygiene in tests/ui-taxonomy.test.ts'
+      files:
+        - tests/ui-taxonomy.test.ts
+      verify: 'npx vitest run tests/ui-taxonomy.test.ts'
+    - id: T3.2
+      title: 'Verify Playwright E2E and preflight suite (0 errors, 0 warnings)'
+      files:
+        - tests/e2e/journey.spec.ts
+      verify: 'bash scripts/preflight.sh && npm run test:e2e'
