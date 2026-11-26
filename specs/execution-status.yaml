@@ -8,11 +8,11 @@ stories:
     completed_at: '2026-11-26T13:29:40-03:00'
   e01s02:
     title: 'Migrate EntradasSpreadsheet and DevemView to shared UI primitives'
-    status: in_progress
+    status: done
     started_at: '2026-11-26T13:29:40-03:00'
-    completed_at: null
+    completed_at: '2026-11-26T13:35:30-03:00'
   e01s03:
     title: 'Migrate AiSubscriptionsView and ViagensFeriasView to shared UI primitives'
-    status: pending
-    started_at: null
+    status: in_progress
+    started_at: '2026-11-26T13:35:30-03:00'
     completed_at: null

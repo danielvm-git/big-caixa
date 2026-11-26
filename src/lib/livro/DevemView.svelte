@@ -2,17 +2,13 @@
 	import { onMount } from 'svelte';
 	import { loadVinculos } from '$lib/read-model/client';
 	import type { VinculoDoc } from '$lib/read-model/types';
+	import { DataState, Money, PageHeader, SegmentedTabs } from '$lib/ui';
 
 	let vinculos = $state<VinculoDoc[]>([]);
 	let carregando = $state(true);
 	let erro = $state(false);
 	let filtroStatus = $state<'todos' | 'ativo' | 'quitado'>('todos');
 	let vinculoSelecionadoId = $state<string | null>(null);
-
-	const fmt = (val?: number) => {
-		if (val === undefined || isNaN(val)) return '—';
-		return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-	};
 
 	const fmtData = (d?: string) => {
 		if (!d) return '—';
@@ -72,27 +68,39 @@
 	let vinculoAtivo = $derived(
 		emprestimos.find((v) => v.id === vinculoSelecionadoId) ?? emprestimos[0]
 	);
+
+	let statusTabs = $derived([
+		{ value: 'todos' as const, label: 'Todos', count: emprestimos.length },
+		{
+			value: 'ativo' as const,
+			label: 'Ativos',
+			count: emprestimos.filter((v) => v.status === 'ativo').length
+		},
+		{
+			value: 'quitado' as const,
+			label: 'Quitados',
+			count: emprestimos.filter((v) => v.status === 'quitado').length
+		}
+	]);
 </script>
 
 <div class="devem-container">
-	<header class="header">
-		<div>
-			<h1 class="title">Quem deve a quem</h1>
-			<p class="subtitle">
-				Gestão e conciliação analítica de empréstimos concedidos, amortizações mensais e créditos a
-				receber.
-			</p>
-		</div>
-		<button class="btn-refresh" onclick={carregar} title="Recarregar dados">
-			<i class="ph ph-arrows-clockwise"></i> Atualizar
-		</button>
-	</header>
+	<PageHeader
+		title="Quem deve a quem"
+		subtitle="Gestão e conciliação analítica de empréstimos concedidos, amortizações mensais e créditos a receber."
+	>
+		{#snippet actions()}
+			<button class="btn-refresh" onclick={carregar} title="Recarregar dados">
+				<i class="ph ph-arrows-clockwise"></i> Atualizar
+			</button>
+		{/snippet}
+	</PageHeader>
 
 	<!-- KPI Cards -->
 	<div class="kpi-grid">
 		<div class="kpi-card">
 			<span class="kpi-label">Total Concedido</span>
-			<span class="kpi-value">{fmt(totalOriginal)}</span>
+			<span class="kpi-value"><Money value={totalOriginal} /></span>
 			<span class="kpi-sub">
 				{emprestimos.length}
 				{emprestimos.length === 1 ? 'operação registrada' : 'operações registradas'}
@@ -100,12 +108,12 @@
 		</div>
 		<div class="kpi-card">
 			<span class="kpi-label">Já Devolvido / Amortizado</span>
-			<span class="kpi-value positive">{fmt(totalPago)}</span>
+			<span class="kpi-value positive"><Money value={totalPago} /></span>
 			<span class="kpi-sub">{taxaRecuperacao}% do montante recuperado</span>
 		</div>
 		<div class="kpi-card highlight">
 			<span class="kpi-label">Saldo em Aberto (A Receber)</span>
-			<span class="kpi-value alert">{fmt(totalAReceber)}</span>
+			<span class="kpi-value alert"><Money value={totalAReceber} /></span>
 			<span class="kpi-sub">{nomesEmAberto}</span>
 		</div>
 		<div class="kpi-card">
@@ -119,44 +127,27 @@
 		</div>
 	</div>
 
-	<!-- Banner explicativo removido: detalhes exibidos dinamicamente por empréstimo no painel -->
 	{#if carregando}
-		<div class="loading-state">
-			<i class="ph ph-circle-notch animate-spin"></i> Carregando empréstimos e razão analítico...
-		</div>
+		<DataState kind="loading" message="Carregando empréstimos e razão analítico..." />
 	{:else if erro}
-		<div class="error-state">
-			Não foi possível carregar os dados de empréstimos. Verifique a conexão com o banco.
-		</div>
+		<DataState
+			kind="error"
+			message="Não foi possível carregar os dados de empréstimos."
+			detail="Verifique a conexão com o banco."
+			onretry={carregar}
+		/>
 	{:else}
 		<!-- Main Content Grid -->
 		<div class="main-grid">
 			<!-- Lista de Empréstimos -->
 			<div class="cards-column">
 				<div class="filter-bar">
-					<div class="filter-tabs">
-						<button
-							class="tab-btn"
-							class:active={filtroStatus === 'todos'}
-							onclick={() => (filtroStatus = 'todos')}
-						>
-							Todos ({emprestimos.length})
-						</button>
-						<button
-							class="tab-btn"
-							class:active={filtroStatus === 'ativo'}
-							onclick={() => (filtroStatus = 'ativo')}
-						>
-							Ativos ({emprestimos.filter((v) => v.status === 'ativo').length})
-						</button>
-						<button
-							class="tab-btn"
-							class:active={filtroStatus === 'quitado'}
-							onclick={() => (filtroStatus = 'quitado')}
-						>
-							Quitados ({emprestimos.filter((v) => v.status === 'quitado').length})
-						</button>
-					</div>
+					<SegmentedTabs
+						items={statusTabs}
+						value={filtroStatus}
+						ariaLabel="Filtrar empréstimos por status"
+						onchange={(next) => (filtroStatus = next)}
+					/>
 				</div>
 
 				<div class="loans-list">
@@ -189,15 +180,15 @@
 							<div class="loan-card-middle">
 								<div class="val-box">
 									<span class="val-label">Original</span>
-									<span class="val-num">{fmt(orig)}</span>
+									<span class="val-num"><Money value={orig} /></span>
 								</div>
 								<div class="val-box">
 									<span class="val-label">Já Pago</span>
-									<span class="val-num positive">{fmt(pago)}</span>
+									<span class="val-num positive"><Money value={pago} /></span>
 								</div>
 								<div class="val-box">
 									<span class="val-label">Saldo Devedor</span>
-									<span class="val-num" class:alert={saldo > 0}>{fmt(saldo)}</span>
+									<span class="val-num" class:alert={saldo > 0}><Money value={saldo} /></span>
 								</div>
 							</div>
 
@@ -236,15 +227,15 @@
 					<div class="detail-summary-cards">
 						<div class="summary-box">
 							<span class="s-label">Principal</span>
-							<span class="s-val">{fmt(atvOrig)}</span>
+							<span class="s-val"><Money value={atvOrig} /></span>
 						</div>
 						<div class="summary-box">
 							<span class="s-label">Total Amortizado</span>
-							<span class="s-val positive">{fmt(atvPago)}</span>
+							<span class="s-val positive"><Money value={atvPago} /></span>
 						</div>
 						<div class="summary-box highlight">
 							<span class="s-label">Saldo Restante</span>
-							<span class="s-val" class:alert={atvSaldo > 0}>{fmt(atvSaldo)}</span>
+							<span class="s-val" class:alert={atvSaldo > 0}><Money value={atvSaldo} /></span>
 						</div>
 					</div>
 
@@ -276,14 +267,16 @@
 												<td class="td-date">{fmtData(h.data)}</td>
 												<td class="td-desc">{h.descricao}</td>
 												<td class="td-memo">{h.memo}</td>
-												<td class="td-val positive">{fmt(h.valor)}</td>
+												<td class="td-val positive"><Money value={h.valor} /></td>
 											</tr>
 										{/each}
 									</tbody>
 									<tfoot>
 										<tr>
 											<td colspan="3" style="text-align:right;font-weight:600">Total Devolvido:</td>
-											<td class="td-val positive" style="font-weight:700">{fmt(atvPago)}</td>
+											<td class="td-val positive" style="font-weight:700">
+												<Money value={atvPago} />
+											</td>
 										</tr>
 									</tfoot>
 								</table>
@@ -319,27 +312,6 @@
 			opacity: 1;
 			transform: translateY(0);
 		}
-	}
-
-	.header {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		border-bottom: 1px solid var(--ln);
-		padding-bottom: 14px;
-	}
-
-	.title {
-		font:
-			600 28px 'Source Serif 4',
-			serif;
-		margin: 0;
-	}
-
-	.subtitle {
-		color: var(--mut);
-		font-size: 14px;
-		margin: 4px 0 0;
 	}
 
 	.btn-refresh {
@@ -423,35 +395,6 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-	}
-
-	.filter-tabs {
-		display: flex;
-		gap: 6px;
-		background: var(--sf2);
-		padding: 3px;
-		border-radius: 8px;
-		width: 100%;
-	}
-
-	.tab-btn {
-		flex: 1;
-		border: 0;
-		background: transparent;
-		color: var(--mut);
-		padding: 6px 10px;
-		font-size: 12px;
-		font-weight: 500;
-		border-radius: 6px;
-		cursor: pointer;
-		transition: all 0.15s;
-		text-align: center;
-	}
-
-	.tab-btn.active {
-		background: var(--sf);
-		color: var(--ink);
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 	}
 
 	.loans-list {
@@ -753,17 +696,5 @@
 		font-size: 13px;
 		background: var(--sf2);
 		border-radius: 8px;
-	}
-
-	.loading-state,
-	.error-state {
-		padding: 40px;
-		text-align: center;
-		color: var(--mut);
-		font-size: 14px;
-	}
-
-	.error-state {
-		color: #dc2626;
 	}
 </style>
