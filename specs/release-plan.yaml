@@ -1,0 +1,14 @@
+version: 1
+project: big-caixa
+epics:
+  - id: e01
+    slug: onda-1
+    title: 'Onda 1 — Homogeneidade Visual & Privacidade (UI Primitives)'
+    wsjf: 9.5
+    bcps: 8
+    status: in_progress
+    capsule: specs/epics/e01-onda-1/
+    stories:
+      - e01s01
+      - e01s02
+      - e01s03

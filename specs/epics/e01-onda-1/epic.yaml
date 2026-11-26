@@ -1,0 +1,30 @@
+type: epic
+context: big-caixa/onda-1
+id: e01
+slug: onda-1
+title: 'Onda 1 — Homogeneidade Visual & Privacidade (UI Primitives)'
+wsjf: 9.5
+bcps: 8
+scope:
+  in:
+    - 'Criar src/lib/ui/ com Money (formatador + blur de privacidade automático), PageHeader, DataState e SegmentedTabs'
+    - 'Integrar os primitivos nas 4 views independentes (EntradasSpreadsheet, DevemView, AiSubscriptionsView, ViagensFeriasView)'
+    - 'Remover breadcrumbs duplicados e formatadores monetários locais redundantes'
+    - 'Garantir cobertura de testes unitários e regressão de privacidade/homogeneidade'
+  out:
+    - 'Alteração da taxonomia da sidebar (Onda 2)'
+    - 'Remoção de Período/Escopo/Base da topbar global (Onda 2)'
+    - 'Roteamento SvelteKit nativo e remoção de renderVals() (Onda 3)'
+stories:
+  - id: e01s01
+    title: 'Shared UI primitives with automatic privacy blur'
+    wsjf: 10
+    bcps: 3
+  - id: e01s02
+    title: 'Integrate EntradasSpreadsheet and DevemView'
+    wsjf: 9
+    bcps: 3
+  - id: e01s03
+    title: 'Integrate AiSubscriptionsView and ViagensFeriasView'
+    wsjf: 8
+    bcps: 2

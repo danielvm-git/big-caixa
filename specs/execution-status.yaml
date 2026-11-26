@@ -1,0 +1,18 @@
+version: 1
+active_epic: e01
+stories:
+  e01s01:
+    title: 'Create shared UI primitives (Money, PageHeader, DataState, SegmentedTabs)'
+    status: in_progress
+    started_at: '2026-11-26T13:27:00-03:00'
+    completed_at: null
+  e01s02:
+    title: 'Migrate EntradasSpreadsheet and DevemView to shared UI primitives'
+    status: pending
+    started_at: null
+    completed_at: null
+  e01s03:
+    title: 'Migrate AiSubscriptionsView and ViagensFeriasView to shared UI primitives'
+    status: pending
+    started_at: null
+    completed_at: null
