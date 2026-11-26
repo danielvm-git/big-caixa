@@ -278,8 +278,10 @@ CREATE TABLE IF NOT EXISTS caixa.fato_vinculo (
     prazo TEXT,
     status TEXT,
     nota TEXT,
+    conta_codigo TEXT,
     criado_em TEXT DEFAULT CURRENT_TIMESTAMP
 );
+ALTER TABLE caixa.fato_vinculo ADD COLUMN IF NOT EXISTS conta_codigo TEXT;
 
 CREATE OR REPLACE VIEW caixa.v_transferencia_sem_par AS
 SELECT 
