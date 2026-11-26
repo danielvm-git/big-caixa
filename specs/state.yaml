@@ -1,10 +1,10 @@
 version: 1
-active_flow: build_epic
+active_flow: idle
 active_epic: e01
-active_branch: feat/e01-onda-1-ui-primitives
-last_merged_pr: 5
-commit_sha: 2248337
-status: pr_ready
+active_branch: main
+last_merged_pr: 6
+commit_sha: 0746535
+status: done
 epic_cycle:
   epic: e01
   story: e01s03
@@ -19,8 +19,8 @@ steps:
   step_4_strangler_fig_phase2: done
   e01_onda_1_ui_primitives: done
 handoff:
-  next_skill: release-branch
-  context: 'All 3 stories of Epic e01 (Onda 1) built, verified, audited, and code-reviewed on feat/e01-onda-1-ui-primitives. Awaiting user approval for push/PR/merge.'
+  next_skill: none
+  context: 'Epic e01 (Onda 1 — UI Primitives & Privacidade) successfully shipped and merged via PR #6 into main (commit 0746535).'
 decisions:
   - id: D-001
     gate: strangler_fig_phase2
@@ -36,4 +36,7 @@ decisions:
     reason: Self-audit passed all sections (security, types, scope, Boy Scout, F.I.R.S.T tests); advancing to independent request-review.
   - id: D-005
     gate: respond_review_e01
-    reason: Fixed both Critical privacy leaks (AiSubscriptionsView KPI hints and EntradaInspectorDrawer), formatMoney edge cases (Infinity/-0/near-zero rounding), SegmentedTabs ARIA semantics/focus-visible, and DevemView WCAG AA tokens. Stopped at release-branch per outward-facing gate.
+    reason: Fixed both Critical privacy leaks (AiSubscriptionsView KPI hints and EntradaInspectorDrawer), formatMoney edge cases (Infinity/-0/near-zero rounding), SegmentedTabs ARIA semantics/focus-visible, and DevemView WCAG AA tokens.
+  - id: D-006
+    gate: release_branch_e01
+    reason: Released feat/e01-onda-1-ui-primitives via PR #6, verified CI checks, squash-merged, and cleaned branch.
