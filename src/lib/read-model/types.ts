@@ -66,6 +66,8 @@ export type ViagemDoc = {
 	margem: number;
 	empresa: number;
 	compra_ids: string[];
+	total_gasto?: number;
+	compras?: Array<{ id: string; data: string; loja: string; titulo: string; valor: number }>;
 };
 
 export type FeriasDoc = {
@@ -115,13 +117,27 @@ export type VinculoDoc = {
 	tipo: string;
 	de_pessoa_id: string;
 	para_pessoa_id: string;
+	para_pessoa_nome?: string;
+	para_pessoa_relacao?: string;
 	compra_id: string | null;
 	valor_centavos: number;
+	valor_original?: number;
 	parcelas: number | null;
 	juros_pct: number | null;
 	prazo: string | null;
 	status: string;
 	nota: string;
+	criado_em?: string;
+	conta_codigo?: string;
+	conta_nome?: string;
+	total_pago?: number;
+	saldo_devedor?: number;
+	historico?: Array<{
+		data: string;
+		descricao: string;
+		valor: number;
+		memo: string;
+	}>;
 };
 
 export type ContratoDoc = {
@@ -150,4 +166,88 @@ export type BlocoDoc = {
 	meta_pct: number;
 	tipo_meta: 'teto' | 'piso';
 	cor: string;
+};
+
+export type EntradaMensalDoc = {
+	ano: number;
+	origem: string;
+	tipo_id: string;
+	tipo_nome: string;
+	tipo_slug: string;
+	jan: number;
+	fev: number;
+	mar: number;
+	abr: number;
+	mai: number;
+	jun: number;
+	jul: number;
+	ago: number;
+	set: number;
+	out: number;
+	nov: number;
+	dez: number;
+	total: number;
+};
+
+export type EntradaTransacaoDoc = {
+	transacao_id: string;
+	data: string;
+	periodo: string;
+	ano: number;
+	mes_num: number;
+	descricao: string;
+	origem: string;
+	tipo_id: string;
+	tipo_nome: string;
+	tipo_slug: string;
+	valor: number;
+};
+
+export type TipoEntradaDoc = {
+	id: string;
+	nome: string;
+	slug: string;
+};
+
+export type AiSubscriptionDoc = {
+	id: number;
+	provider_key: string;
+	name: string;
+	category: string;
+	plan_name: string;
+	billing_cycle: 'monthly' | 'annual' | 'pay_as_you_go' | 'free';
+	cost_usd: number;
+	cost_brl: number;
+	balance_usd: number;
+	total_spent_usd: number;
+	month_spent_usd: number;
+	renewal_date: string | null;
+	auto_renew: boolean;
+	status: string;
+	models_used: string | null;
+	pricing_summary: string | null;
+	notes: string | null;
+	updated_at: string;
+};
+
+export type AiPricingDoc = {
+	id: number;
+	provider_key: string;
+	model_name: string;
+	input_cache_hit_usd: number | null;
+	input_cache_miss_usd: number | null;
+	output_usd: number | null;
+	context_window: string | null;
+	notes: string | null;
+};
+
+export type AiSummaryDoc = {
+	total_active_services: number;
+	total_recurring_plans: number;
+	total_monthly_cost_usd: number;
+	total_monthly_cost_brl: number;
+	total_available_credits_usd: number;
+	total_month_spent_usd: number;
+	total_historical_spent_usd: number;
+	next_renewal_date: string | null;
 };

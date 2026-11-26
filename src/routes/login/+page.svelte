@@ -12,6 +12,11 @@
 	let err = $state('');
 
 	onMount(async () => {
+		if (AUTH_MODE === 'local' || !import.meta.env.PROD) {
+			setSession({ token: 'local-token', email: 'daniel@casa.exemplo' });
+			await goto('/hoje/');
+			return;
+		}
 		const s = await fetchNeonSession();
 		if (s) {
 			setSession(s);

@@ -20,15 +20,23 @@
 	onMount(() => {
 		void (async () => {
 			if (!hideNav) {
-				try {
-					const neon = await fetchNeonSession();
-					if (neon) setSession(neon);
-				} catch {
-					// Falha de rede não pode deixar a página em Carregando.
-				}
-				if (!getSession()) {
-					await goto('/login/');
-					return;
+				if (import.meta.env.VITE_AUTH_MODE === 'local') {
+					setSession({ token: 'local-token', email: 'daniel@casa.exemplo' });
+				} else {
+					try {
+						const neon = await fetchNeonSession();
+						if (neon) setSession(neon);
+					} catch {
+						// Falha de rede não pode deixar a página em Carregando.
+					}
+					if (!getSession()) {
+						if (!import.meta.env.PROD) {
+							setSession({ token: 'local-token', email: 'daniel@casa.exemplo' });
+						} else {
+							await goto('/login/');
+							return;
+						}
+					}
 				}
 			}
 			const sessao = getSession();
@@ -51,6 +59,8 @@
 				'/fluxo': 'fluxo',
 				'/mes': 'mes',
 				'/compras': 'compras',
+				'/entradas': 'entradas',
+				'/ia': 'ia',
 				'/viagens': 'viagens',
 				'/projetos': 'projetos',
 				'/mapa': 'mapa',

@@ -1,2 +1,5 @@
-<h1 class="serif">Viagens e férias</h1>
-<p class="mut">Calendário de períodos aquisitivos e viagens.</p>
+<script lang="ts">
+	import ViagensFeriasView from '$lib/livro/ViagensFeriasView.svelte';
+</script>
+
+<ViagensFeriasView />

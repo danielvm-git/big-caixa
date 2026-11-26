@@ -14,9 +14,9 @@ export interface LogContext {
 
 const ALLOWED = ['requestId', 'route', 'durationMs', 'release', 'outcome', 'count'] as const;
 
-function serializeErr(err: unknown): { message: string; stack?: string } {
+function serializeErr(err: unknown): { message: string } {
 	if (err instanceof Error) {
-		return { message: err.name, stack: err.stack };
+		return { message: err.name || 'Error' };
 	}
 	return { message: 'non-error thrown' };
 }

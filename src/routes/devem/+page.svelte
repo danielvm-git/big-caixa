@@ -1,1 +1,5 @@
-<p class="mut">Quem deve a quem — shell LivroApp.</p>
+<script lang="ts">
+	import DevemView from '$lib/livro/DevemView.svelte';
+</script>
+
+<DevemView />

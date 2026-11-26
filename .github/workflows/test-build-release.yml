@@ -51,7 +51,7 @@ jobs:
       - name: Check Conventional Commits
         if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
         run: |
-          git log origin/main..HEAD --oneline | while read -r line; do
+          git log origin/main..HEAD --no-merges --format="%s" | while read -r line; do
             if ! echo "$line" | grep -qE "^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?!?: "; then
               echo "FAIL: Non-conventional commit: $line"
               exit 1
@@ -99,6 +99,7 @@ jobs:
           # Pública; deve bater com bigbase.toml [env] para o build no BigBase
           VITE_NEON_AUTH_URL: https://ep-lucky-dawn-bbvltogw.neonauth.c-15.us-east-1.aws.neon.tech/neondb/auth
           VITE_CAIXA_URL: https://br-shy-water-bbqc6npc-leitura.compute.c-15.us-east-1.aws.neon.tech
+          VITE_CAIXA_ESCRITA_URL: https://br-shy-water-bbqc6npc-escrita.compute.c-15.us-east-1.aws.neon.tech
 
       - name: Write deploy-meta
         run: |

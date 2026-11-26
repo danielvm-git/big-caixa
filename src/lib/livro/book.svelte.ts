@@ -35,6 +35,8 @@ const PATH = {
 	fluxo: '/fluxo/',
 	mes: '/mes/',
 	compras: '/compras/',
+	entradas: '/entradas/',
+	ia: '/ia/',
 	viagens: '/viagens/',
 	projetos: '/projetos/',
 	mapa: '/mapa/',
@@ -116,6 +118,8 @@ export class Book {
 		modalAm: false,
 		wzStep: -1,
 		novaPessoaNome: '',
+		collapsedDivisoes: [] as string[],
+		visaoPerspectiva: 'pessoal' as 'pessoal' | 'casa' | 'consolidado',
 		expired: false,
 		cnt: 0,
 		openRef: null,
@@ -543,6 +547,22 @@ export class Book {
 		this.setState((s) => ({ route: r, hist: [...s.hist, s.route], panel: null, ...(x || {}) }));
 		this.open(r);
 	}
+	toggleDivisao(codigo: string) {
+		const arr = this.state.collapsedDivisoes || [];
+		const exists = arr.includes(codigo);
+		this.setState({
+			collapsedDivisoes: exists ? arr.filter((x) => x !== codigo) : [...arr, codigo]
+		});
+	}
+	expandAllDivisoes() {
+		this.setState({ collapsedDivisoes: [] });
+	}
+	collapseAllDivisoes(allCodes: string[]) {
+		this.setState({ collapsedDivisoes: allCodes });
+	}
+	setVisaoPerspectiva(p: 'pessoal' | 'casa' | 'consolidado') {
+		this.setState({ visaoPerspectiva: p });
+	}
 	title(r) {
 		return {
 			hoje: 'Hoje',
@@ -550,6 +570,8 @@ export class Book {
 			fluxo: 'Fluxo de caixa',
 			mes: 'Mês e categorias',
 			compras: 'Compras e lançamentos',
+			entradas: 'Entradas e receitas',
+			ia: 'Assinaturas & APIs de IA',
 			viagens: 'Viagens e férias',
 			projetos: 'Projetos',
 			mapa: 'Mapa da casa',
@@ -993,7 +1015,8 @@ export class Book {
 					['visao', 'Visão geral do ano'],
 					['fluxo', 'Fluxo de caixa'],
 					['mes', 'Mês e categorias'],
-					['compras', 'Compras e lançamentos']
+					['compras', 'Compras e lançamentos'],
+					['entradas', 'Entradas tipo (Planilha)']
 				]
 			},
 			{
@@ -1031,6 +1054,7 @@ export class Book {
 				label: 'Cuidar',
 				ic: 'ph ph-heartbeat',
 				subs: [
+					['ia', 'Assinaturas & APIs de IA'],
 					['importar', 'Importar'],
 					['pendencias', 'Pendências'],
 					['regras', 'Regras'],
@@ -1064,6 +1088,8 @@ export class Book {
 			'fluxo',
 			'mes',
 			'compras',
+			'entradas',
+			'ia',
 			'viagens',
 			'projetos',
 			'mapa',
@@ -1635,30 +1661,63 @@ export class Book {
 			pj = { nome: P.nome, items: P.items.map((i) => ({ d: i[0], n: i[1], v: R(i[2]) })) };
 		// ano
 		const anoSerie = s.ledger ? carregarAno(s.ledger, s.ledger.year) : null;
-		const visaoRaw = s.ledger ? visaoGeralAno(s.ledger, s.ledger.year) : [];
-		const visaoRows = visaoRaw.map((r) => ({
-			l: r.label,
-			v: r.cells.map((c) => ({
-				t: c.projetado && c.v ? c2(c.v) : c2(c.v),
-				mut: c.projetado
-			})),
-			m: c2(r.media),
-			t: c2(r.total),
-			fs: r.kind === 'summary' ? '13px' : '12px',
-			fw: r.kind === 'summary' ? 600 : 400,
-			bg: r.kind === 'summary' ? 'var(--sf2)' : 'transparent',
-			pl: r.kind === 'category' ? '12px' : '0',
-			go: r.categoriaId
-				? () =>
-						this.drill('compras', {
-							filt: {
-								cat: categoria(r.categoriaId).nome,
-								label: categoria(r.categoriaId).nome
-							},
-							cur: 0
-						})
-				: null
-		}));
+		const visaoRaw = s.ledger
+			? visaoGeralAno(s.ledger, s.ledger.year, s.visaoPerspectiva || 'pessoal')
+			: [];
+		const collapsed = new Set(s.collapsedDivisoes || []);
+		const allDivCodes = visaoRaw
+			.filter((r) => r.kind === 'division' && r.divisaoId)
+			.map((r) => r.divisaoId!);
+
+		const visaoRows = visaoRaw.map((r) => {
+			const isDivision = r.kind === 'division';
+			const isCategory = r.kind === 'category';
+			const isSummary = r.kind === 'summary';
+			const isCollapsed = isDivision && r.divisaoId ? collapsed.has(r.divisaoId) : false;
+			const isHidden = isCategory && r.divisaoId ? collapsed.has(r.divisaoId) : false;
+
+			return {
+				l: r.label,
+				kind: r.kind,
+				divisaoId: r.divisaoId,
+				categoriaId: r.categoriaId,
+				childCount: r.childCount,
+				isDivision,
+				isCategory,
+				isSummary,
+				isCollapsed,
+				isHidden,
+				v: r.cells.map((c) => ({
+					t: c.projetado && c.v ? c2(c.v) : c2(c.v),
+					mut: c.projetado
+				})),
+				m: c2(r.media),
+				t: c2(r.total),
+				fs: isSummary ? '13px' : isDivision ? '12.5px' : '11.5px',
+				fw: isSummary ? 600 : isDivision ? 600 : 400,
+				bg: isSummary
+					? r.label === 'Saldo'
+						? 'rgba(59,130,246,0.08)'
+						: 'var(--sf2)'
+					: isDivision
+						? 'var(--sf)'
+						: 'transparent',
+				pl: isCategory ? '32px' : '10px',
+				toggle: isDivision && r.divisaoId ? () => this.toggleDivisao(r.divisaoId!) : null,
+				go: r.categoriaId
+					? () =>
+							this.drill('compras', {
+								filt: {
+									cat: categoria(r.categoriaId).nome,
+									label: categoria(r.categoriaId).nome
+								},
+								cur: 0
+							})
+					: isDivision && r.divisaoId
+						? () => this.toggleDivisao(r.divisaoId!)
+						: null
+			};
+		});
 		const mx2 = anoSerie ? Math.max(...anoSerie.map((r) => totalResumo(r)), 1) : 26000;
 		const ybars = anoSerie
 			? anoSerie.map((r, i) => ({
@@ -2178,10 +2237,48 @@ export class Book {
 			gridC:
 				'display:grid;grid-template-columns:28px 56px minmax(0,1.6fr) minmax(0,1.3fr) 54px 96px 96px 90px;gap:10px;align-items:center;',
 			mnames: this.MN,
-			visaoTitle: s.ledger ? 'Visão geral de ' + s.ledger.year : 'Visão geral de 2026',
+			visaoPerspectiva: s.visaoPerspectiva || 'pessoal',
+			visaoPerspectivas: [
+				{
+					id: 'pessoal',
+					l: '👤 Pessoal (Daniel)',
+					bg: (s.visaoPerspectiva || 'pessoal') === 'pessoal' ? 'var(--sf)' : 'transparent',
+					fw: (s.visaoPerspectiva || 'pessoal') === 'pessoal' ? 600 : 400,
+					go: () => this.setVisaoPerspectiva('pessoal')
+				},
+				{
+					id: 'casa',
+					l: '🏡 Casa',
+					bg: s.visaoPerspectiva === 'casa' ? 'var(--sf)' : 'transparent',
+					fw: s.visaoPerspectiva === 'casa' ? 600 : 400,
+					go: () => this.setVisaoPerspectiva('casa')
+				},
+				{
+					id: 'consolidado',
+					l: '🌐 Consolidado',
+					bg: s.visaoPerspectiva === 'consolidado' ? 'var(--sf)' : 'transparent',
+					fw: s.visaoPerspectiva === 'consolidado' ? 600 : 400,
+					go: () => this.setVisaoPerspectiva('consolidado')
+				}
+			],
+			visaoTitle: s.ledger
+				? `Visão geral de ${s.ledger.year} · ${
+						(s.visaoPerspectiva || 'pessoal') === 'casa'
+							? 'Casa'
+							: (s.visaoPerspectiva || 'pessoal') === 'pessoal'
+								? 'Pessoal (Daniel)'
+								: 'Consolidado'
+					}`
+				: 'Visão geral de 2026',
 			visaoNote:
-				'A planilha do ano numa só página: saldo, entradas, saídas e cada categoria, mês a mês. Meses futuros são projeção. Clique numa categoria para ver as compras.',
+				(s.visaoPerspectiva || 'pessoal') === 'casa'
+					? 'Despesas da casa custeadas pelo repasse de R$ 10.000/mês de Daniel, aportes de Mariana e da Mãe.'
+					: (s.visaoPerspectiva || 'pessoal') === 'pessoal'
+						? 'Gastos pessoais de Daniel + repasse fixo de R$ 10.000/mês para a moradia/casa.'
+						: 'Visão consolidada de todas as entradas e despesas familiares no ano.',
 			visaoRows,
+			expandAllDivisoes: () => this.expandAllDivisoes(),
+			collapseAllDivisoes: () => this.collapseAllDivisoes(allDivCodes),
 			casaCadastroFalta: 'O cadastro desta área ainda não existe no livro.',
 			pessoasPorCirculo,
 			pessoaDet,
@@ -2189,6 +2286,20 @@ export class Book {
 			casaPins,
 			casaEmpty: !s.ledger?.lugares?.length,
 			emps,
+			custoItens: (s.ledger?.months[s.ledger.mesAtual] ?? [])
+				.filter((m) => m.escopo === 'casa')
+				.map((m) => {
+					const cat = categoria(m.categoria_id);
+					return {
+						id: m.categoria_id,
+						nome: cat?.nome ?? m.categoria_id,
+						recorrente: c2(m.custo_recorrente),
+						extraordinario: c2(m.custo_extraordinario),
+						totalVal: m.custo_recorrente + m.custo_extraordinario,
+						total: c2(m.custo_recorrente + m.custo_extraordinario)
+					};
+				})
+				.sort((a, b) => b.totalVal - a.totalVal),
 			goDevem: () => this.nav('devem'),
 			goMapa: () => this.nav('mapa'),
 			fluxoVinculosNota:

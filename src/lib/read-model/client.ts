@@ -4,6 +4,8 @@ import type {
 	CompraDoc,
 	ContratoDoc,
 	ContaDoc,
+	EntradaMensalDoc,
+	EntradaTransacaoDoc,
 	FaturaPendenteDoc,
 	FeriasDoc,
 	ImportacaoDoc,
@@ -14,11 +16,16 @@ import type {
 	ReferenciaDoc,
 	RegraDoc,
 	SankeyDoc,
+	TipoEntradaDoc,
 	ViagemDoc,
-	VinculoDoc
+	VinculoDoc,
+	AiSubscriptionDoc,
+	AiPricingDoc,
+	AiSummaryDoc
 } from './types';
 import { AUTH_MODE } from '$lib/auth/api';
 import { getSession } from '$lib/auth/session';
+import { caixaWrite } from '$lib/write/caixa';
 
 type Colecao =
 	| 'mes'
@@ -36,28 +43,43 @@ type Colecao =
 	| 'vinculos'
 	| 'contratos'
 	| 'contas'
-	| 'blocos';
+	| 'blocos'
+	| 'entradas'
+	| 'entradas_transacoes'
+	| 'tipos_entrada'
+	| 'ai_subscriptions'
+	| 'ai_pricing'
+	| 'ai_summary'
+	| 'bootstrap';
 
 function caixaBase(): string {
 	const fromEnv = import.meta.env.VITE_CAIXA_URL as string | undefined;
-	return (fromEnv ?? '').replace(/\/$/, '');
+	if (fromEnv) return fromEnv.replace(/\/$/, '');
+	if (AUTH_MODE === 'local' || !import.meta.env.PROD) return 'http://localhost:8787';
+	return '';
 }
 
 function useFixtures(): boolean {
+	if (AUTH_MODE === 'local') return false;
 	if (AUTH_MODE === 'mock') return true;
 	const token = getSession()?.token;
 	return token === 'mock-token';
 }
 
-async function read<T>(colecao: Colecao, periodo?: string): Promise<T[]> {
+async function readRaw<T>(colecao: Colecao, periodo?: string): Promise<T | null> {
 	const token = getSession()?.token;
 	const base = caixaBase();
 	if (!token || !base) throw new Error('leitura indisponível');
 	const path = periodo ? `${base}/${colecao}/${periodo}` : `${base}/${colecao}`;
 	const res = await fetch(path, { headers: { Authorization: `Bearer ${token}` } });
 	if (!res.ok) throw new Error(`leitura ${res.status}`);
-	const json = (await res.json()) as { data?: T[] };
-	return json.data ?? [];
+	const json = (await res.json()) as { data?: T | null };
+	return json.data ?? null;
+}
+
+async function read<T>(colecao: Colecao, periodo?: string): Promise<T[]> {
+	const data = await readRaw<T[]>(colecao, periodo);
+	return Array.isArray(data) ? data : [];
 }
 
 export async function loadMes(periodo: string): Promise<MesDoc[]> {
@@ -153,4 +175,102 @@ export async function loadContas(): Promise<ContaDoc[]> {
 export async function loadBlocos(): Promise<BlocoDoc[]> {
 	if (useFixtures()) return [];
 	return read<BlocoDoc>('blocos');
+}
+
+export async function loadEntradas(ano: number | string): Promise<EntradaMensalDoc[]> {
+	if (useFixtures()) return [];
+	return read<EntradaMensalDoc>('entradas', String(ano));
+}
+
+export async function loadEntradasTransacoes(periodo?: string): Promise<EntradaTransacaoDoc[]> {
+	if (useFixtures()) return [];
+	return read<EntradaTransacaoDoc>('entradas_transacoes', periodo);
+}
+
+export async function loadTiposEntrada(): Promise<TipoEntradaDoc[]> {
+	if (useFixtures()) return [];
+	return read<TipoEntradaDoc>('tipos_entrada');
+}
+
+export async function reclassificarEntrada(
+	transacaoId: string,
+	contaCodigo: string
+): Promise<void> {
+	await caixaWrite({
+		op: 'reclassificar_entrada',
+		transacao_id: transacaoId,
+		conta_codigo: contaCodigo
+	});
+}
+
+export async function loadAiSubscriptions(): Promise<AiSubscriptionDoc[]> {
+	if (useFixtures()) return [];
+	return read<AiSubscriptionDoc>('ai_subscriptions');
+}
+
+export async function loadAiPricing(): Promise<AiPricingDoc[]> {
+	if (useFixtures()) return [];
+	return read<AiPricingDoc>('ai_pricing');
+}
+
+export async function loadAiSummary(): Promise<AiSummaryDoc | null> {
+	if (useFixtures()) return null;
+	const data = await readRaw<AiSummaryDoc | AiSummaryDoc[]>('ai_summary');
+	if (!data) return null;
+	if (Array.isArray(data)) return data[0] ?? null;
+	return data;
+}
+
+export type BootstrapDoc = {
+	months: Record<string, MesDoc[]>;
+	sankey: Record<string, SankeyDoc[]>;
+	compras: CompraDoc[];
+	referencia: Record<string, ReferenciaDoc[]>;
+	regras: RegraDoc[];
+	viagens: ViagemDoc[];
+	ferias: FeriasDoc[];
+	importacoes: ImportacaoDoc[];
+	faturasPendentes: FaturaPendenteDoc[];
+	pendencias: PendenciasDoc | null;
+	pessoas: PessoaDoc[];
+	lugares: LugarDoc[];
+	vinculos: VinculoDoc[];
+	contratos: ContratoDoc[];
+	contas: ContaDoc[];
+	blocos: BlocoDoc[];
+};
+
+export async function loadBootstrap(mesAtual: string): Promise<BootstrapDoc | null> {
+	if (useFixtures()) return null;
+	const data = await readRaw<BootstrapDoc>('bootstrap', mesAtual);
+	if (!data) return null;
+	return {
+		...data,
+		viagens: (data.viagens ?? []).map((v) => ({
+			...v,
+			compra_ids: Array.isArray(v.compra_ids)
+				? v.compra_ids.filter((x): x is string => typeof x === 'string')
+				: []
+		})),
+		pessoas: (data.pessoas ?? []).map((p) => ({
+			...p,
+			aliases: Array.isArray(p.aliases)
+				? p.aliases.filter((x): x is string => typeof x === 'string')
+				: []
+		}))
+	};
+}
+
+export async function atualizarAiSubscription(params: {
+	provider_key: string;
+	balance_usd?: number;
+	month_spent_usd?: number;
+	renewal_date?: string;
+	plan_name?: string;
+	cost_usd?: number;
+}): Promise<void> {
+	await caixaWrite({
+		op: 'atualizar_ai_subscription',
+		...params
+	});
 }
