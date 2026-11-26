@@ -37,6 +37,15 @@ const pool = {
 	on: (...args) => getPool().on(...args)
 };
 
+let _hasCore = null;
+async function hasCoreSchema() {
+	if (_hasCore === null) {
+		const q = await pool.query(`SELECT to_regclass('core.journal_entry') IS NOT NULL AS ok`);
+		_hasCore = Boolean(q.rows[0]?.ok);
+	}
+	return _hasCore;
+}
+
 const jwksUrl = process.env.NEON_AUTH_JWKS_URL;
 const authBase = process.env.NEON_AUTH_BASE_URL;
 const jwks = jwksUrl ? createRemoteJWKSet(new URL(jwksUrl)) : null;
@@ -270,6 +279,35 @@ async function rows(colecao, periodo) {
 		return q.rows;
 	}
 	if (colecao === 'vinculos') {
+		if (!(await hasCoreSchema())) {
+			const q = await pool.query(
+				`SELECT
+					v.id,
+					v.tipo,
+					v.de_pessoa_id,
+					v.para_pessoa_id,
+					coalesce(p.nome, v.para_pessoa_id) AS para_pessoa_nome,
+					coalesce(p.relacao, 'outro') AS para_pessoa_relacao,
+					v.compra_id,
+					(v.valor_centavos / 100.0)::float8 AS valor_original,
+					v.valor_centavos::float8 AS valor_centavos,
+					v.parcelas,
+					v.juros_pct::float8 AS juros_pct,
+					v.prazo,
+					v.status,
+					coalesce(v.nota, '') AS nota,
+					v.criado_em,
+					''::text AS conta_codigo,
+					''::text AS conta_nome,
+					CASE WHEN v.status = 'quitado' THEN (v.valor_centavos / 100.0)::float8 ELSE 0::float8 END AS total_pago,
+					CASE WHEN v.status = 'quitado' THEN 0::float8 ELSE (v.valor_centavos / 100.0)::float8 END AS saldo_devedor,
+					'[]'::json AS historico
+				 FROM caixa.fato_vinculo v
+				 LEFT JOIN caixa.dim_pessoa p ON p.id = v.para_pessoa_id
+				 ORDER BY v.status ASC, v.criado_em DESC`
+			);
+			return q.rows;
+		}
 		const q = await pool.query(
 			`SELECT 
 				v.id,
@@ -356,6 +394,37 @@ async function rows(colecao, periodo) {
 	}
 	if (colecao === 'entradas') {
 		const ano = ANO.test(periodo ?? '') ? parseInt(periodo, 10) : new Date().getFullYear();
+		if (!(await hasCoreSchema())) {
+			const q = await pool.query(
+				`SELECT
+					$1::int AS ano,
+					coalesce(co.nome, l.conta_id, 'Outro') AS origem,
+					coalesce(l.categoria_id, 'outros') AS tipo_id,
+					coalesce(ca.nome, l.categoria_id, 'Outras receitas') AS tipo_nome,
+					coalesce(l.categoria_id, 'outros') AS tipo_slug,
+					coalesce(SUM(CASE WHEN substr(l.data_caixa, 6, 2) = '01' THEN l.valor_centavos / 100.0 END), 0)::float8 AS jan,
+					coalesce(SUM(CASE WHEN substr(l.data_caixa, 6, 2) = '02' THEN l.valor_centavos / 100.0 END), 0)::float8 AS fev,
+					coalesce(SUM(CASE WHEN substr(l.data_caixa, 6, 2) = '03' THEN l.valor_centavos / 100.0 END), 0)::float8 AS mar,
+					coalesce(SUM(CASE WHEN substr(l.data_caixa, 6, 2) = '04' THEN l.valor_centavos / 100.0 END), 0)::float8 AS abr,
+					coalesce(SUM(CASE WHEN substr(l.data_caixa, 6, 2) = '05' THEN l.valor_centavos / 100.0 END), 0)::float8 AS mai,
+					coalesce(SUM(CASE WHEN substr(l.data_caixa, 6, 2) = '06' THEN l.valor_centavos / 100.0 END), 0)::float8 AS jun,
+					coalesce(SUM(CASE WHEN substr(l.data_caixa, 6, 2) = '07' THEN l.valor_centavos / 100.0 END), 0)::float8 AS jul,
+					coalesce(SUM(CASE WHEN substr(l.data_caixa, 6, 2) = '08' THEN l.valor_centavos / 100.0 END), 0)::float8 AS ago,
+					coalesce(SUM(CASE WHEN substr(l.data_caixa, 6, 2) = '09' THEN l.valor_centavos / 100.0 END), 0)::float8 AS set,
+					coalesce(SUM(CASE WHEN substr(l.data_caixa, 6, 2) = '10' THEN l.valor_centavos / 100.0 END), 0)::float8 AS out,
+					coalesce(SUM(CASE WHEN substr(l.data_caixa, 6, 2) = '11' THEN l.valor_centavos / 100.0 END), 0)::float8 AS nov,
+					coalesce(SUM(CASE WHEN substr(l.data_caixa, 6, 2) = '12' THEN l.valor_centavos / 100.0 END), 0)::float8 AS dez,
+					coalesce(SUM(l.valor_centavos / 100.0), 0)::float8 AS total
+				 FROM caixa.fato_lancamento l
+				 LEFT JOIN caixa.dim_conta co ON co.id = l.conta_id
+				 LEFT JOIN caixa.dim_categoria ca ON ca.id = l.categoria_id
+				 WHERE l.tipo = 'receita' AND l.sintetico = 0 AND l.data_caixa LIKE $2
+				 GROUP BY 1, 2, 3, 4, 5
+				 ORDER BY total DESC`,
+				[ano, `${ano}-%`]
+			);
+			return q.rows;
+		}
 		const q = await pool.query(
 			`SELECT ano, origem, tipo_id, tipo_nome, tipo_slug,
 			        jan, fev, mar, abr, mai, jun, jul, ago, set_val AS set, out_val AS out, nov, dez, total
@@ -367,6 +436,31 @@ async function rows(colecao, periodo) {
 		return q.rows;
 	}
 	if (colecao === 'entradas_transacoes') {
+		if (!(await hasCoreSchema())) {
+			const q = await pool.query(
+				`SELECT
+					l.id::text AS transacao_id,
+					l.data_caixa AS data,
+					substr(l.data_caixa, 1, 7) AS periodo,
+					substr(l.data_caixa, 1, 4)::int AS ano,
+					substr(l.data_caixa, 6, 2)::int AS mes_num,
+					coalesce(l.descricao_original, '') AS descricao,
+					coalesce(co.nome, l.conta_id, 'Outro') AS origem,
+					coalesce(l.categoria_id, 'outros') AS tipo_id,
+					coalesce(ca.nome, l.categoria_id, 'Outras receitas') AS tipo_nome,
+					coalesce(l.categoria_id, 'outros') AS tipo_slug,
+					(l.valor_centavos / 100.0)::float8 AS valor
+				 FROM caixa.fato_lancamento l
+				 LEFT JOIN caixa.dim_conta co ON co.id = l.conta_id
+				 LEFT JOIN caixa.dim_categoria ca ON ca.id = l.categoria_id
+				 WHERE l.tipo = 'receita' AND l.sintetico = 0
+				   AND ($1::text IS NULL OR substr(l.data_caixa, 1, 7) = $1 OR substr(l.data_caixa, 1, 4) = $1)
+				 ORDER BY l.data_caixa DESC, l.id DESC
+				 LIMIT 300`,
+				[periodo]
+			);
+			return q.rows;
+		}
 		const q = await pool.query(
 			`SELECT transacao_id, data, periodo, ano, mes_num, descricao, origem, tipo_id, tipo_nome, tipo_slug, valor
 			 FROM caixa.v_entrada_transacao
@@ -378,6 +472,14 @@ async function rows(colecao, periodo) {
 		return q.rows;
 	}
 	if (colecao === 'tipos_entrada') {
+		if (!(await hasCoreSchema())) {
+			const q = await pool.query(
+				`SELECT id, nome, id AS slug
+				 FROM caixa.dim_categoria
+				 ORDER BY ordem, nome`
+			);
+			return q.rows;
+		}
 		const q = await pool.query(
 			`SELECT code AS id, name AS nome, coalesce(legacy_cat_id, 'outras_receitas') AS slug
 			 FROM core.account
