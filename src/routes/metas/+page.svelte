@@ -1,2 +1,5 @@
-<h1 class="serif">50/30/20 e metas</h1>
-<p class="mut">Blocos necessidade, desejo e futuro.</p>
+<script lang="ts">
+	import MetasView from '$lib/livro/MetasView.svelte';
+</script>
+
+<MetasView />

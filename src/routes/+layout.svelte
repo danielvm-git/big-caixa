@@ -94,7 +94,7 @@
 {#if hideNav}
 	{@render children()}
 {:else if pronta}
-	<LivroApp />
+	<LivroApp>{@render children()}</LivroApp>
 {:else}
 	<p class="boot">Carregando…</p>
 {/if}

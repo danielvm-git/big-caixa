@@ -1,0 +1,61 @@
+type: tasks
+context: big-caixa/onda-3
+epic: e03
+stories:
+  e03s01:
+    - id: T1.1
+      title: 'Enable children snippet in LivroApp.svelte and render children in main'
+      files:
+        - src/lib/livro/LivroApp.svelte
+        - src/routes/+layout.svelte
+      verify: 'npm run typecheck && npm run lint'
+    - id: T1.2
+      title: 'Mount extracted views in core routes (hoje, visao, fluxo, compras)'
+      files:
+        - src/routes/hoje/+page.svelte
+        - src/routes/visao/+page.svelte
+        - src/routes/fluxo/+page.svelte
+        - src/routes/compras/+page.svelte
+      verify: 'npm run typecheck && npm run lint && npm test'
+  e03s02:
+    - id: T2.1
+      title: 'Extract MesView, MetasView, AnoView and mount in respective routes'
+      files:
+        - src/lib/livro/MesView.svelte
+        - src/lib/livro/MetasView.svelte
+        - src/lib/livro/AnoView.svelte
+        - src/routes/mes/+page.svelte
+        - src/routes/metas/+page.svelte
+        - src/routes/ano/+page.svelte
+      verify: 'npm run typecheck && npm run lint && npm test'
+    - id: T2.2
+      title: 'Extract operational views (Pendencias, Importar, Regras, Referencia, Conta, Casa)'
+      files:
+        - src/lib/livro/PendenciasView.svelte
+        - src/lib/livro/ImportarView.svelte
+        - src/lib/livro/RegrasView.svelte
+        - src/lib/livro/ReferenciaView.svelte
+        - src/lib/livro/ContaView.svelte
+        - src/lib/livro/CasaView.svelte
+        - src/routes/pendencias/+page.svelte
+        - src/routes/importar/+page.svelte
+        - src/routes/regras/+page.svelte
+        - src/routes/referencia/+page.svelte
+        - src/routes/conta/+page.svelte
+        - src/routes/mapa/+page.svelte
+        - src/routes/pessoas/+page.svelte
+        - src/routes/custo/+page.svelte
+      verify: 'npm run typecheck && npm run lint && npm test'
+  e03s03:
+    - id: T3.1
+      title: 'Create typed stores ui.svelte.ts and ledger-context.svelte.ts'
+      files:
+        - src/lib/livro/ui.svelte.ts
+        - src/lib/livro/ledger-context.svelte.ts
+        - src/lib/livro/book.svelte.ts
+      verify: 'npm run typecheck && npm run lint && npm test'
+    - id: T3.2
+      title: 'Add routing architecture tests and run preflight + E2E'
+      files:
+        - tests/ui-routing.test.ts
+      verify: 'bash scripts/preflight.sh && npm run test:e2e'

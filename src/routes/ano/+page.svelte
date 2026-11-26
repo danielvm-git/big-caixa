@@ -1,2 +1,5 @@
-<h1 class="serif">Ano e projeção</h1>
-<p class="mut">Barras mensais e cenário de corte.</p>
+<script lang="ts">
+	import AnoView from '$lib/livro/AnoView.svelte';
+</script>
+
+<AnoView />

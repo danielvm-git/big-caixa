@@ -1,5 +1,6 @@
 <script lang="ts">
 	// @ts-nocheck — markup fiel ao protótipo, tipos dinâmicos
+	import type { Snippet } from 'svelte';
 	import Casa from '$lib/livro/Casa.svelte';
 	import ComprasView from '$lib/livro/ComprasView.svelte';
 	import DevemView from '$lib/livro/DevemView.svelte';
@@ -11,6 +12,8 @@
 	import VisaoGeralView from '$lib/livro/VisaoGeralView.svelte';
 	import { LedgerContextBar } from '$lib/ui';
 	import { book } from '$lib/livro/book.svelte';
+
+	let { children }: { children?: Snippet } = $props();
 	let v = $derived(book.view());
 
 	function focusOnMount(node) {
@@ -144,589 +147,633 @@
 		{/if}
 
 		<main style="flex:1;overflow:auto;padding:24px;position:relative">
-			{#if v.gap}
-				<div style="max-width:720px;display:flex;flex-direction:column;gap:12px;animation:up .3s">
-					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">{v.gapTitle}</h1>
-					<p style="margin:0;color:var(--mut);font-size:15px;max-width:52ch">
-						{v.s.projetos
-							? 'Obras e reformas não têm tabela no livro (nem no app Swift). Use categorias e compras para acompanhar gastos.'
-							: 'Esta parte ainda mostrava a casa de exemplo do protótipo.'}
-					</p>
-				</div>
-			{/if}
-			{#if v.s.hoje}
-				<HojeView />
-			{/if}
-
-			{#if v.s.visao}
-				<VisaoGeralView />
-			{/if}
-
-			{#if v.s.fluxo}
-				<FluxoView />
-			{/if}
-
-			{#if v.s.mes}
-				<div style="max-width:1180px;display:flex;flex-direction:column;gap:14px;animation:up .3s">
-					<div style="display:flex;gap:4px;flex-wrap:wrap">
-						{#each v.months as mo}<button
-								onclick={mo.go}
-								style="border:1px solid var(--ln);border-radius:8px;padding:5px 11px;font-size:13px;cursor:pointer;background:{mo.bg};color:{mo.col}"
-							>
-								{mo.l}
-							</button>{/each}
+			{#if children}
+				{@render children()}
+			{:else}
+				{#if v.gap}
+					<div style="max-width:720px;display:flex;flex-direction:column;gap:12px;animation:up .3s">
+						<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">{v.gapTitle}</h1>
+						<p style="margin:0;color:var(--mut);font-size:15px;max-width:52ch">
+							{v.s.projetos
+								? 'Obras e reformas não têm tabela no livro (nem no app Swift). Use categorias e compras para acompanhar gastos.'
+								: 'Esta parte ainda mostrava a casa de exemplo do protótipo.'}
+						</p>
 					</div>
+				{/if}
+				{#if v.s.hoje}
+					<HojeView />
+				{/if}
+
+				{#if v.s.visao}
+					<VisaoGeralView />
+				{/if}
+
+				{#if v.s.fluxo}
+					<FluxoView />
+				{/if}
+
+				{#if v.s.mes}
 					<div
-						style="display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px;align-items:start"
+						style="max-width:1180px;display:flex;flex-direction:column;gap:14px;animation:up .3s"
 					>
-						<div style="{v.card}padding:8px 16px">
-							<div
-								style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1.2fr) 86px 52px 66px 70px;gap:8px;padding:8px 0;font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em"
-							>
-								<span>Categoria</span><span></span><span style="text-align:right">Valor</span><span
-									style="text-align:right"
+						<div style="display:flex;gap:4px;flex-wrap:wrap">
+							{#each v.months as mo}<button
+									onclick={mo.go}
+									style="border:1px solid var(--ln);border-radius:8px;padding:5px 11px;font-size:13px;cursor:pointer;background:{mo.bg};color:{mo.col}"
 								>
-									% total
-								</span><span style="text-align:right">vs. mês ant.</span><span>12 meses</span>
-							</div>
-							{#each v.catRows as c}<div
-									data-hv
-									role="button"
-									tabindex="0"
-									onclick={c.go}
-									onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && c.go?.()}
-									style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1.2fr) 86px 52px 66px 70px;gap:8px;align-items:center;padding:9px 0;border-top:1px solid var(--ln);cursor:pointer;background:{c.bg}"
-								>
-									<span style="display:flex;gap:8px;align-items:center;font-size:14px">
-										<span style={c.bx}>{c.b}</span>{c.n}
-									</span>
-									<div style="height:10px;background:var(--sf2);border-radius:5px">
-										<div style="height:10px;border-radius:5px;background:{c.col};width:{c.w}"></div>
-									</div>
-									<span style="text-align:right;font-variant-numeric:tabular-nums;{v.bl}">
-										{c.v}
-									</span><span style="text-align:right;font-size:12px;color:var(--mut)">
-										{c.pct}
-									</span><span style="text-align:right;font-size:12px;color:{c.dc}">{c.d}</span>
-									<svg viewBox="0 0 70 22" style="width:70px;height:22px">
-										<polyline points={c.pts} fill="none" stroke="var(--ink)" stroke-width="1.6" />
-									</svg>
-								</div>{/each}
-							<div style="font-size:12px;color:var(--mut);padding:10px 0 4px">
-								Gastos extraordinários (◆) entram no total, mas ficam fora do ritmo normal.
-							</div>
-						</div>
-						<div style="{v.card}display:flex;flex-direction:column;gap:12px;position:sticky;top:0">
-							<div style="display:flex;align-items:center;gap:8px">
-								<h2 style="font:600 22px 'Source Serif 4',serif;margin:0;flex:1">{v.cd.n}</h2>
-								<span style={v.cd.bx}>{v.cd.b}</span><span style="font-size:12px;color:var(--mut)">
-									{v.cd.bn}
-								</span>
-							</div>
-							<div style="display:flex;align-items:flex-end;gap:5px;height:90px">
-								{#each v.cd.bars as b}<div
-										style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;justify-content:flex-end;height:100%"
-									>
-										<div
-											style="width:100%;height:{b.h};background:{b.c};border-radius:3px 3px 0 0"
-										></div>
-										<span style="font-size:9px;color:var(--mut)">{b.l}</span>
-									</div>{/each}
-							</div>
-							<div style="font-size:13px">
-								<b>Maiores lojas</b>
-								{#each v.cd.stores as s3}<div
-										style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--ln)"
-									>
-										<span>{s3.n}</span><span style="font-variant-numeric:tabular-nums;{v.bl}">
-											{s3.v}
-										</span>
-									</div>{/each}
-							</div>
-							<div style="font-size:13px">
-								<b>Para quem foi o dinheiro</b>
-								<div
-									style="display:flex;height:14px;border-radius:5px;overflow:hidden;margin:6px 0;gap:2px"
-								>
-									<div style="flex:5;background:var(--N)"></div>
-									<div style="flex:2;background:var(--D)"></div>
-									<div style="flex:2;background:var(--F)"></div>
-									<div style="flex:1;background:var(--mut)"></div>
-								</div>
-								<span style="color:var(--mut);font-size:12px">
-									{#if v.real}{v.escopoShare}{:else}Casa 50% · Rafael 20% · Mariana 20% · Olivia 10%{/if}
-								</span>
-							</div>
-							<button onclick={v.cd.go} style={v.btnP}>Ver as compras de {v.cd.n} →</button>
-						</div>
-					</div>
-				</div>
-			{/if}
-
-			{#if v.s.compras}
-				<ComprasView />
-			{/if}
-
-			{#if v.s.entradas}
-				<EntradasSpreadsheet />
-			{/if}
-
-			{#if v.s.ia}
-				<AiSubscriptionsView />
-			{/if}
-
-			{#if v.s.viagens}
-				<ViagensFeriasView />
-			{/if}
-
-			{#if v.s.projetos && v.sample}
-				<div style="max-width:1100px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
-					<div>
-						<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Projetos da casa</h1>
-						<div style="color:var(--mut);font-size:14px">
-							Compras de um período, reunidas sob um nome. Mesma ideia das viagens.
-						</div>
-					</div>
-					<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
-						{#each v.projs as p}<button
-								onclick={p.go}
-								style="{v.card}text-align:left;cursor:pointer;color:var(--ink);border-color:{p.bd}"
-							>
-								<i class={p.ic} style="font-size:24px"></i>
-								<div style="font:600 18px 'Source Serif 4',serif">{p.nome}</div>
-								<div style="font-size:12px;color:var(--mut)">{p.per}</div>
-								<div style="font:600 22px 'Source Serif 4',serif;margin-top:6px;{v.bl}">
-									{p.total}
-								</div>
-								<div style="height:6px;background:var(--sf2);border-radius:3px;margin-top:6px">
-									<div
-										style="height:6px;border-radius:3px;background:var(--terra);width:{p.w}"
-									></div>
-								</div>
-								<div style="font-size:12px;color:var(--mut);margin-top:4px">{p.sub}</div>
-							</button>{/each}
-					</div>
-					<div style={v.card}>
-						<h2 style="font:600 20px 'Source Serif 4',serif;margin:0 0 8px">{v.pj.nome}</h2>
-						{#each v.pj.items as c}<div
-								style="display:grid;grid-template-columns:70px 1fr 100px;gap:10px;padding:8px 0;border-top:1px solid var(--ln);font-size:14px"
-							>
-								<span style="color:var(--mut)">{c.d}</span><span>{c.n}</span><span
-									style="text-align:right;font-variant-numeric:tabular-nums;{v.bl}"
-								>
-									{c.v}
-								</span>
-							</div>{/each}
-					</div>
-				</div>
-			{/if}
-
-			{#if v.s.mapa}
-				<div style="max-width:1240px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
-					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Nossa casa</h1>
-					<div style={v.card}>
-						<Casa pins={v.casaPins} empty={v.casaEmpty} onstartWizard={v.startCasaWizard} />
-					</div>
-					{#if v.wzStep >= 0}
-						<div style="{v.card}display:flex;flex-direction:column;gap:10px">
-							<b>Passo {v.wzStep + 1} de 3</b>
-							<p style="margin:0;color:var(--mut);font-size:14px">
-								{v.wzStep === 0
-									? 'Quem mora na casa'
-									: v.wzStep === 1
-										? 'Lugares da rotina'
-										: 'Como aparecem no extrato'}
-							</p>
-							<button type="button" onclick={v.wzStep < 2 ? v.wzNext : v.wzDone} style={v.btnP}>
-								{v.wzStep < 2 ? 'Continuar' : 'Concluir'}
-							</button>
-						</div>
-					{/if}
-				</div>
-			{/if}
-
-			{#if v.s.pessoas}
-				<div style="max-width:1100px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
-					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Pessoas</h1>
-					<button type="button" onclick={v.openModalAm} style={v.btn}>Adicionar pessoa</button>
-					{#each v.pessoasPorCirculo as g}
-						<div style={v.card}>
-							<div style="font:600 17px 'Source Serif 4',serif;margin-bottom:8px">{g.circulo}</div>
-							{#each g.pessoas as p}<button
-									type="button"
-									onclick={p.go}
-									style="{v.rowBtn}border-bottom:1px solid var(--ln)"
-								>
-									<span style="flex:1;text-align:left;font-weight:600">{p.n}</span>
-									<span style="color:var(--mut)">{p.r}</span>
+									{mo.l}
 								</button>{/each}
 						</div>
-					{/each}
-				</div>
-			{/if}
+						<div
+							style="display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px;align-items:start"
+						>
+							<div style="{v.card}padding:8px 16px">
+								<div
+									style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1.2fr) 86px 52px 66px 70px;gap:8px;padding:8px 0;font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em"
+								>
+									<span>Categoria</span><span></span><span style="text-align:right">
+										Valor
+									</span><span style="text-align:right"> % total </span><span
+										style="text-align:right"
+									>
+										vs. mês ant.
+									</span><span>12 meses</span>
+								</div>
+								{#each v.catRows as c}<div
+										data-hv
+										role="button"
+										tabindex="0"
+										onclick={c.go}
+										onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && c.go?.()}
+										style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1.2fr) 86px 52px 66px 70px;gap:8px;align-items:center;padding:9px 0;border-top:1px solid var(--ln);cursor:pointer;background:{c.bg}"
+									>
+										<span style="display:flex;gap:8px;align-items:center;font-size:14px">
+											<span style={c.bx}>{c.b}</span>{c.n}
+										</span>
+										<div style="height:10px;background:var(--sf2);border-radius:5px">
+											<div
+												style="height:10px;border-radius:5px;background:{c.col};width:{c.w}"
+											></div>
+										</div>
+										<span style="text-align:right;font-variant-numeric:tabular-nums;{v.bl}">
+											{c.v}
+										</span><span style="text-align:right;font-size:12px;color:var(--mut)">
+											{c.pct}
+										</span><span style="text-align:right;font-size:12px;color:{c.dc}">{c.d}</span>
+										<svg viewBox="0 0 70 22" style="width:70px;height:22px">
+											<polyline points={c.pts} fill="none" stroke="var(--ink)" stroke-width="1.6" />
+										</svg>
+									</div>{/each}
+								<div style="font-size:12px;color:var(--mut);padding:10px 0 4px">
+									Gastos extraordinários (◆) entram no total, mas ficam fora do ritmo normal.
+								</div>
+							</div>
+							<div
+								style="{v.card}display:flex;flex-direction:column;gap:12px;position:sticky;top:0"
+							>
+								<div style="display:flex;align-items:center;gap:8px">
+									<h2 style="font:600 22px 'Source Serif 4',serif;margin:0;flex:1">{v.cd.n}</h2>
+									<span style={v.cd.bx}>{v.cd.b}</span><span
+										style="font-size:12px;color:var(--mut)"
+									>
+										{v.cd.bn}
+									</span>
+								</div>
+								<div style="display:flex;align-items:flex-end;gap:5px;height:90px">
+									{#each v.cd.bars as b}<div
+											style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;justify-content:flex-end;height:100%"
+										>
+											<div
+												style="width:100%;height:{b.h};background:{b.c};border-radius:3px 3px 0 0"
+											></div>
+											<span style="font-size:9px;color:var(--mut)">{b.l}</span>
+										</div>{/each}
+								</div>
+								<div style="font-size:13px">
+									<b>Maiores lojas</b>
+									{#each v.cd.stores as s3}<div
+											style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--ln)"
+										>
+											<span>{s3.n}</span><span style="font-variant-numeric:tabular-nums;{v.bl}">
+												{s3.v}
+											</span>
+										</div>{/each}
+								</div>
+								<div style="font-size:13px">
+									<b>Para quem foi o dinheiro</b>
+									<div
+										style="display:flex;height:14px;border-radius:5px;overflow:hidden;margin:6px 0;gap:2px"
+									>
+										<div style="flex:5;background:var(--N)"></div>
+										<div style="flex:2;background:var(--D)"></div>
+										<div style="flex:2;background:var(--F)"></div>
+										<div style="flex:1;background:var(--mut)"></div>
+									</div>
+									<span style="color:var(--mut);font-size:12px">
+										{#if v.real}{v.escopoShare}{:else}Casa 50% · Rafael 20% · Mariana 20% · Olivia
+											10%{/if}
+									</span>
+								</div>
+								<button onclick={v.cd.go} style={v.btnP}>Ver as compras de {v.cd.n} →</button>
+							</div>
+						</div>
+					</div>
+				{/if}
 
-			{#if v.s.pessoa && v.pessoaDet}
-				<div style="max-width:900px;display:flex;flex-direction:column;gap:14px;animation:up .3s">
-					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">
-						{v.pessoaDet.apelido || v.pessoaDet.nome}
-					</h1>
-					<div style={v.card}>
-						<div style="font-size:14px;color:var(--mut)">{v.pessoaDet.relacao}</div>
-						{#if v.pessoaDet.aliases?.length}
-							<div style="margin-top:8px;font-size:13px">
-								Aliases: {v.pessoaDet.aliases.join(', ')}
+				{#if v.s.compras}
+					<ComprasView />
+				{/if}
+
+				{#if v.s.entradas}
+					<EntradasSpreadsheet />
+				{/if}
+
+				{#if v.s.ia}
+					<AiSubscriptionsView />
+				{/if}
+
+				{#if v.s.viagens}
+					<ViagensFeriasView />
+				{/if}
+
+				{#if v.s.projetos && v.sample}
+					<div
+						style="max-width:1100px;display:flex;flex-direction:column;gap:16px;animation:up .3s"
+					>
+						<div>
+							<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Projetos da casa</h1>
+							<div style="color:var(--mut);font-size:14px">
+								Compras de um período, reunidas sob um nome. Mesma ideia das viagens.
+							</div>
+						</div>
+						<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
+							{#each v.projs as p}<button
+									onclick={p.go}
+									style="{v.card}text-align:left;cursor:pointer;color:var(--ink);border-color:{p.bd}"
+								>
+									<i class={p.ic} style="font-size:24px"></i>
+									<div style="font:600 18px 'Source Serif 4',serif">{p.nome}</div>
+									<div style="font-size:12px;color:var(--mut)">{p.per}</div>
+									<div style="font:600 22px 'Source Serif 4',serif;margin-top:6px;{v.bl}">
+										{p.total}
+									</div>
+									<div style="height:6px;background:var(--sf2);border-radius:3px;margin-top:6px">
+										<div
+											style="height:6px;border-radius:3px;background:var(--terra);width:{p.w}"
+										></div>
+									</div>
+									<div style="font-size:12px;color:var(--mut);margin-top:4px">{p.sub}</div>
+								</button>{/each}
+						</div>
+						<div style={v.card}>
+							<h2 style="font:600 20px 'Source Serif 4',serif;margin:0 0 8px">{v.pj.nome}</h2>
+							{#each v.pj.items as c}<div
+									style="display:grid;grid-template-columns:70px 1fr 100px;gap:10px;padding:8px 0;border-top:1px solid var(--ln);font-size:14px"
+								>
+									<span style="color:var(--mut)">{c.d}</span><span>{c.n}</span><span
+										style="text-align:right;font-variant-numeric:tabular-nums;{v.bl}"
+									>
+										{c.v}
+									</span>
+								</div>{/each}
+						</div>
+					</div>
+				{/if}
+
+				{#if v.s.mapa}
+					<div
+						style="max-width:1240px;display:flex;flex-direction:column;gap:16px;animation:up .3s"
+					>
+						<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Nossa casa</h1>
+						<div style={v.card}>
+							<Casa pins={v.casaPins} empty={v.casaEmpty} onstartWizard={v.startCasaWizard} />
+						</div>
+						{#if v.wzStep >= 0}
+							<div style="{v.card}display:flex;flex-direction:column;gap:10px">
+								<b>Passo {v.wzStep + 1} de 3</b>
+								<p style="margin:0;color:var(--mut);font-size:14px">
+									{v.wzStep === 0
+										? 'Quem mora na casa'
+										: v.wzStep === 1
+											? 'Lugares da rotina'
+											: 'Como aparecem no extrato'}
+								</p>
+								<button type="button" onclick={v.wzStep < 2 ? v.wzNext : v.wzDone} style={v.btnP}>
+									{v.wzStep < 2 ? 'Continuar' : 'Concluir'}
+								</button>
 							</div>
 						{/if}
 					</div>
-				</div>
-			{/if}
+				{/if}
 
-			{#if v.s.devem}
-				<DevemView />
-			{/if}
-
-			{#if v.s.empregados}
-				<div style="max-width:1100px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
-					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Empregados</h1>
-					{#if v.emps.length}{#each v.emps as e}<div style={v.card}>
-								<div style="font:600 18px 'Source Serif 4',serif">{e.n}</div>
-								<div style="font-size:13px;color:var(--mut)">{e.rel} · {e.reg}</div>
-								<div style="font-size:13px;margin-top:8px">
-									Salário: <b style={v.bl}>{e.sal}</b>
+				{#if v.s.pessoas}
+					<div
+						style="max-width:1100px;display:flex;flex-direction:column;gap:16px;animation:up .3s"
+					>
+						<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Pessoas</h1>
+						<button type="button" onclick={v.openModalAm} style={v.btn}>Adicionar pessoa</button>
+						{#each v.pessoasPorCirculo as g}
+							<div style={v.card}>
+								<div style="font:600 17px 'Source Serif 4',serif;margin-bottom:8px">
+									{g.circulo}
 								</div>
-							</div>{/each}{:else}<div style={v.card}>{v.casaCadastroFalta}</div>{/if}
-				</div>
-			{/if}
+								{#each g.pessoas as p}<button
+										type="button"
+										onclick={p.go}
+										style="{v.rowBtn}border-bottom:1px solid var(--ln)"
+									>
+										<span style="flex:1;text-align:left;font-weight:600">{p.n}</span>
+										<span style="color:var(--mut)">{p.r}</span>
+									</button>{/each}
+							</div>
+						{/each}
+					</div>
+				{/if}
 
-			{#if v.s.custo}
-				<div style="max-width:1100px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
-					<div style="display:flex;justify-content:space-between;align-items:baseline">
+				{#if v.s.pessoa && v.pessoaDet}
+					<div style="max-width:900px;display:flex;flex-direction:column;gap:14px;animation:up .3s">
 						<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">
-							Custo e pagamentos da casa
+							{v.pessoaDet.apelido || v.pessoaDet.nome}
 						</h1>
-						<span style="color:var(--mut);font-size:14px">{v.perLabel}</span>
-					</div>
-					{#if v.custoItens?.length}
-						<div style="{v.card}display:flex;flex-direction:column;gap:10px">
-							<div
-								style="font:600 14px 'Source Serif 4',serif;padding-bottom:8px;border-bottom:1px solid var(--ln);display:grid;grid-template-columns:1fr 140px 140px;gap:12px"
-							>
-								<span>Categoria</span>
-								<span style="text-align:right">Recorrente</span>
-								<span style="text-align:right">Total</span>
-							</div>
-							{#each v.custoItens as it}
-								<div
-									style="display:grid;grid-template-columns:1fr 140px 140px;gap:12px;align-items:center;padding:6px 0;border-bottom:1px solid var(--sf2);font-size:13px"
-								>
-									<span style="font-weight:500">{it.nome}</span>
-									<span
-										style="text-align:right;color:var(--mut);font-variant-numeric:tabular-nums;{v.bl}"
-									>
-										{it.recorrente}
-									</span>
-									<span
-										style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums;{v.bl}"
-									>
-										{it.total}
-									</span>
+						<div style={v.card}>
+							<div style="font-size:14px;color:var(--mut)">{v.pessoaDet.relacao}</div>
+							{#if v.pessoaDet.aliases?.length}
+								<div style="margin-top:8px;font-size:13px">
+									Aliases: {v.pessoaDet.aliases.join(', ')}
 								</div>
-							{/each}
+							{/if}
 						</div>
-					{:else}
-						<div style={v.card}>{v.casaCadastroFalta}</div>
-					{/if}
-				</div>
-			{/if}
+					</div>
+				{/if}
 
-			{#if v.s.ano}
-				<div style="max-width:1100px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
-					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">O ano e o que vem a seguir</h1>
-					<div style={v.card}>
-						<div style="display:flex;gap:16px;font-size:12px;color:var(--mut);margin-bottom:8px">
-							<span>■ Real</span><span>▨ Projeção</span><span>— Ritmo normal</span><span>
-								- - Mês ideal
-							</span>
+				{#if v.s.devem}
+					<DevemView />
+				{/if}
+
+				{#if v.s.empregados}
+					<div
+						style="max-width:1100px;display:flex;flex-direction:column;gap:16px;animation:up .3s"
+					>
+						<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Empregados</h1>
+						{#if v.emps.length}{#each v.emps as e}<div style={v.card}>
+									<div style="font:600 18px 'Source Serif 4',serif">{e.n}</div>
+									<div style="font-size:13px;color:var(--mut)">{e.rel} · {e.reg}</div>
+									<div style="font-size:13px;margin-top:8px">
+										Salário: <b style={v.bl}>{e.sal}</b>
+									</div>
+								</div>{/each}{:else}<div style={v.card}>{v.casaCadastroFalta}</div>{/if}
+					</div>
+				{/if}
+
+				{#if v.s.custo}
+					<div
+						style="max-width:1100px;display:flex;flex-direction:column;gap:16px;animation:up .3s"
+					>
+						<div style="display:flex;justify-content:space-between;align-items:baseline">
+							<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">
+								Custo e pagamentos da casa
+							</h1>
+							<span style="color:var(--mut);font-size:14px">{v.perLabel}</span>
 						</div>
-						<div style="position:relative;height:200px;display:flex;align-items:flex-end;gap:10px">
-							<div
-								style="position:absolute;left:0;right:0;bottom:{v.baseY};border-top:2px solid var(--ink)"
-							></div>
-							<div
-								style="position:absolute;left:0;right:0;bottom:{v.idealY};border-top:2px dashed var(--moss)"
-							></div>
-							{#each v.ybars as b}<div
-									style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:3px"
+						{#if v.custoItens?.length}
+							<div style="{v.card}display:flex;flex-direction:column;gap:10px">
+								<div
+									style="font:600 14px 'Source Serif 4',serif;padding-bottom:8px;border-bottom:1px solid var(--ln);display:grid;grid-template-columns:1fr 140px 140px;gap:12px"
 								>
-									<span style="font-size:10px;color:var(--mut);{v.bl}">{b.v}</span>
+									<span>Categoria</span>
+									<span style="text-align:right">Recorrente</span>
+									<span style="text-align:right">Total</span>
+								</div>
+								{#each v.custoItens as it}
 									<div
-										style="width:100%;height:{b.h};border-radius:4px 4px 0 0;background:{b.bg};border:{b.bd}"
-									></div>
-									<span style="font-size:11px">{b.l}</span>
-								</div>{/each}
-						</div>
-					</div>
-					<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px">
-						<div style="{v.card}display:flex;flex-direction:column;gap:10px">
-							<b style="font:600 17px 'Source Serif 4',serif">O que os números dizem</b>
-							{#each v.insights as i}<div style="display:flex;gap:8px;font-size:14px">
-									<i class="ph ph-lightbulb" style="color:var(--sun);font-size:18px"></i><span>
-										{i}
-									</span>
-								</div>{/each}
-						</div>
-						<div style="{v.card}display:flex;flex-direction:column;gap:10px">
-							<b style="font:600 17px 'Source Serif 4',serif">E se eu cortar…</b>
-							<div style="font-size:14px">Cortar <b>{v.cut}%</b> de Restaurantes</div>
-							<input
-								type="range"
-								min="0"
-								max="50"
-								value={v.cut}
-								oninput={v.setCut}
-								style="accent-color:var(--ink)"
-							/>
-							<div style="font-size:14px">
-								Você economiza <b style={v.bl}>{v.saveM}</b> por mês, <b style={v.bl}>{v.saveY}</b>
-								por ano. Fechamento do ano projetado: <b style={v.bl}>{v.yearEnd}</b>.
+										style="display:grid;grid-template-columns:1fr 140px 140px;gap:12px;align-items:center;padding:6px 0;border-bottom:1px solid var(--sf2);font-size:13px"
+									>
+										<span style="font-weight:500">{it.nome}</span>
+										<span
+											style="text-align:right;color:var(--mut);font-variant-numeric:tabular-nums;{v.bl}"
+										>
+											{it.recorrente}
+										</span>
+										<span
+											style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums;{v.bl}"
+										>
+											{it.total}
+										</span>
+									</div>
+								{/each}
 							</div>
-						</div>
+						{:else}
+							<div style={v.card}>{v.casaCadastroFalta}</div>
+						{/if}
 					</div>
-				</div>
-			{/if}
+				{/if}
 
-			{#if v.s.metas}
-				<div style="max-width:1100px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
-					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">50/30/20 e metas</h1>
-					<p style="margin:0;font-size:13px;color:var(--mut)">{v.metasVinculoNota}</p>
-					<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px">
-						<div style="{v.card}display:flex;gap:18px;align-items:center">
+				{#if v.s.ano}
+					<div
+						style="max-width:1100px;display:flex;flex-direction:column;gap:16px;animation:up .3s"
+					>
+						<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">
+							O ano e o que vem a seguir
+						</h1>
+						<div style={v.card}>
+							<div style="display:flex;gap:16px;font-size:12px;color:var(--mut);margin-bottom:8px">
+								<span>■ Real</span><span>▨ Projeção</span><span>— Ritmo normal</span><span>
+									- - Mês ideal
+								</span>
+							</div>
 							<div
-								style="width:150px;height:150px;border-radius:50%;background:{v.donut};display:flex;align-items:center;justify-content:center"
+								style="position:relative;height:200px;display:flex;align-items:flex-end;gap:10px"
 							>
 								<div
-									style="width:96px;height:96px;border-radius:50%;background:var(--sf);display:flex;align-items:center;justify-content:center;font:600 16px 'Source Serif 4',serif"
-								>
-									2026
-								</div>
+									style="position:absolute;left:0;right:0;bottom:{v.baseY};border-top:2px solid var(--ink)"
+								></div>
+								<div
+									style="position:absolute;left:0;right:0;bottom:{v.idealY};border-top:2px dashed var(--moss)"
+								></div>
+								{#each v.ybars as b}<div
+										style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:3px"
+									>
+										<span style="font-size:10px;color:var(--mut);{v.bl}">{b.v}</span>
+										<div
+											style="width:100%;height:{b.h};border-radius:4px 4px 0 0;background:{b.bg};border:{b.bd}"
+										></div>
+										<span style="font-size:11px">{b.l}</span>
+									</div>{/each}
 							</div>
-							<div style="display:flex;flex-direction:column;gap:6px;font-size:13px">
-								{#each v.blocks as b}<div style="display:flex;gap:8px;align-items:center">
-										<span style={b.bx}>{b.b}</span><span>
-											{b.n}: <b>{b.real}</b> <span style="color:var(--mut)">(meta {b.meta})</span>
+						</div>
+						<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px">
+							<div style="{v.card}display:flex;flex-direction:column;gap:10px">
+								<b style="font:600 17px 'Source Serif 4',serif">O que os números dizem</b>
+								{#each v.insights as i}<div style="display:flex;gap:8px;font-size:14px">
+										<i class="ph ph-lightbulb" style="color:var(--sun);font-size:18px"></i><span>
+											{i}
 										</span>
 									</div>{/each}
 							</div>
-						</div>
-						{#if v.showMetasGoals}<div style="{v.card}display:flex;flex-direction:column;gap:12px">
-								<b style="font:600 17px 'Source Serif 4',serif">Metas</b>
-								{#each v.goals as g}<div>
-										<div style="display:flex;justify-content:space-between;font-size:13px">
-											<span>{g.n}</span><span style={v.bl}>{g.t}</span>
-										</div>
-										<div style="height:10px;background:var(--sf2);border-radius:5px;margin-top:4px">
-											<div
-												style="height:10px;border-radius:5px;background:var(--moss);width:{g.w}"
-											></div>
-										</div>
-									</div>{/each}
-							</div>{/if}
-					</div>
-					{#if v.sample}<div style={v.card}>
-							<b>Mês ideal como referência</b>
-							<div style="font-size:14px;color:var(--mut);margin-top:4px">
-								Para uma renda de R$ 19.080: R$ 9.540 em necessidades, R$ 5.724 em desejos e R$
-								3.816 no futuro. Compare no <button
-									type="button"
-									onclick={v.goFluxo}
-									style="border:0;background:transparent;padding:0;color:inherit;text-decoration:underline;cursor:pointer;font:inherit"
-								>
-									Fluxo de caixa
-								</button>, aba “Mês ideal”.
-							</div>
-						</div>{/if}
-				</div>
-			{/if}
-
-			{#if v.s.importar}
-				<div style="max-width:900px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
-					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Importar extratos</h1>
-					{#if v.real}<p style="margin:0;color:var(--mut);font-size:14px">
-							O envio de arquivos roda no Mac (<code>python3 -m livrocaixa import</code>). Aqui vê o
-							histórico gravado no livro.
-						</p>{/if}
-					{#if v.sample}<div
-							style="border:2px dashed var(--ln);border-radius:16px;padding:40px;text-align:center;background:var(--sf)"
-						>
-							<i class="ph ph-upload-simple" style="font-size:32px"></i>
-							<div style="margin-top:6px"><b>Solte aqui</b> os arquivos CSV ou PDF de fatura</div>
-						</div>{/if}
-					<div style={v.card}>
-						<b>{v.real ? 'Histórico de importação' : 'Último envio'}</b>{#each v.files as f}<div
-								style="display:grid;grid-template-columns:1fr 120px 100px;gap:10px;padding:10px 0;border-top:1px solid var(--ln);margin-top:8px;font-size:14px"
-							>
-								<span>{f.n}</span><span style="color:var(--mut)">{f.d}</span><span
-									style="color:{f.c};font-weight:600"
-								>
-									{f.s}
-								</span>
-							</div>{/each}
-						{#if v.sample}<div
-								style="background:var(--mossBg);padding:10px 12px;border-radius:10px;font-size:13px;margin-top:6px"
-							>
-								Conferência de saldo: Itaú Conta fecha em <b style={v.bl}>R$ 8.214,60</b>, igual ao
-								extrato.
-							</div>{/if}
-					</div>
-				</div>
-			{/if}
-
-			{#if v.s.pendencias}
-				<div style="max-width:960px;display:flex;flex-direction:column;gap:14px;animation:up .3s">
-					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">
-						{v.real ? v.pendN + ' pendências no ano' : 'Falta classificar ' + v.pendN + ' compras'}
-					</h1>
-					{#if v.pendEmpty}<div style="{v.card}text-align:center;padding:48px">
-							<i class="ph ph-confetti" style="font-size:32px"></i>
-							<div style="font:600 20px 'Source Serif 4',serif">Tudo classificado</div>
-						</div>{/if}
-					{#if v.real}{#each v.pendSummary as p}<div
-								style="{v.card}padding:14px 16px;font-size:14px"
-							>
-								<b>{p.title}</b> · {p.n}{#if p.detail}
-									<span style="color:var(--mut)"> — {p.detail}</span>{/if}
-							</div>{/each}{:else}{#each v.pend as p}<div
-								style="{v.card}display:flex;gap:14px;align-items:center;padding:12px 16px"
-							>
-								<div
-									role="button"
-									tabindex="0"
-									style="flex:1;cursor:pointer"
-									onclick={p.open}
-									onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && p.open?.()}
-								>
-									<b>{p.loja}</b><br /><span style="font-size:12px;color:var(--mut)">
-										{p.titulo} · {p.date}
-									</span>
+							<div style="{v.card}display:flex;flex-direction:column;gap:10px">
+								<b style="font:600 17px 'Source Serif 4',serif">E se eu cortar…</b>
+								<div style="font-size:14px">Cortar <b>{v.cut}%</b> de Restaurantes</div>
+								<input
+									type="range"
+									min="0"
+									max="50"
+									value={v.cut}
+									oninput={v.setCut}
+									style="accent-color:var(--ink)"
+								/>
+								<div style="font-size:14px">
+									Você economiza <b style={v.bl}>{v.saveM}</b> por mês,
+									<b style={v.bl}>{v.saveY}</b>
+									por ano. Fechamento do ano projetado: <b style={v.bl}>{v.yearEnd}</b>.
 								</div>
-								<span style="font-variant-numeric:tabular-nums;{v.bl}">{p.v}</span>
-								{#if p.sug}<span style="font-size:13px;color:var(--mut)">
-										parece <b style="color:var(--ink)">{p.sug}</b>{#if p.conf}, {p.conf}{/if}
-									</span>{/if}
-								<button onclick={p.ok} style={v.btnP}>Aprovar</button>
-							</div>{/each}{/if}
-				</div>
-			{/if}
+							</div>
+						</div>
+					</div>
+				{/if}
 
-			{#if v.s.regras}
-				<div style="max-width:960px;display:flex;flex-direction:column;gap:14px;animation:up .3s">
-					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Regras de classificação</h1>
-					<div style="color:var(--mut);font-size:14px">
-						A primeira regra que casa vence. Classificações manuais (cadeado) vencem todas.
+				{#if v.s.metas}
+					<div
+						style="max-width:1100px;display:flex;flex-direction:column;gap:16px;animation:up .3s"
+					>
+						<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">50/30/20 e metas</h1>
+						<p style="margin:0;font-size:13px;color:var(--mut)">{v.metasVinculoNota}</p>
+						<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px">
+							<div style="{v.card}display:flex;gap:18px;align-items:center">
+								<div
+									style="width:150px;height:150px;border-radius:50%;background:{v.donut};display:flex;align-items:center;justify-content:center"
+								>
+									<div
+										style="width:96px;height:96px;border-radius:50%;background:var(--sf);display:flex;align-items:center;justify-content:center;font:600 16px 'Source Serif 4',serif"
+									>
+										2026
+									</div>
+								</div>
+								<div style="display:flex;flex-direction:column;gap:6px;font-size:13px">
+									{#each v.blocks as b}<div style="display:flex;gap:8px;align-items:center">
+											<span style={b.bx}>{b.b}</span><span>
+												{b.n}: <b>{b.real}</b> <span style="color:var(--mut)">(meta {b.meta})</span>
+											</span>
+										</div>{/each}
+								</div>
+							</div>
+							{#if v.showMetasGoals}<div
+									style="{v.card}display:flex;flex-direction:column;gap:12px"
+								>
+									<b style="font:600 17px 'Source Serif 4',serif">Metas</b>
+									{#each v.goals as g}<div>
+											<div style="display:flex;justify-content:space-between;font-size:13px">
+												<span>{g.n}</span><span style={v.bl}>{g.t}</span>
+											</div>
+											<div
+												style="height:10px;background:var(--sf2);border-radius:5px;margin-top:4px"
+											>
+												<div
+													style="height:10px;border-radius:5px;background:var(--moss);width:{g.w}"
+												></div>
+											</div>
+										</div>{/each}
+								</div>{/if}
+						</div>
+						{#if v.sample}<div style={v.card}>
+								<b>Mês ideal como referência</b>
+								<div style="font-size:14px;color:var(--mut);margin-top:4px">
+									Para uma renda de R$ 19.080: R$ 9.540 em necessidades, R$ 5.724 em desejos e R$
+									3.816 no futuro. Compare no <button
+										type="button"
+										onclick={v.goFluxo}
+										style="border:0;background:transparent;padding:0;color:inherit;text-decoration:underline;cursor:pointer;font:inherit"
+									>
+										Fluxo de caixa
+									</button>, aba “Mês ideal”.
+								</div>
+							</div>{/if}
 					</div>
-					<div style="{v.card}display:flex;gap:10px;align-items:center">
-						<i class="ph ph-flask"></i><input
-							placeholder="Testar: digite uma loja, ex. Uber Trip"
-							value={v.test}
-							oninput={v.setTest}
-							style="flex:1;border:0;background:transparent;color:var(--ink);font-size:14px;outline:0"
-						/><span style="font-size:13px">{v.testRes}</span>
-					</div>
-					{#each v.rules as r}<div
-							style="{v.card}display:flex;gap:12px;align-items:center;padding:10px 16px"
-						>
-							<span style="color:var(--mut);width:20px">{r.i}</span><span
-								style="flex:1;font-size:14px"
+				{/if}
+
+				{#if v.s.importar}
+					<div style="max-width:900px;display:flex;flex-direction:column;gap:16px;animation:up .3s">
+						<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Importar extratos</h1>
+						{#if v.real}<p style="margin:0;color:var(--mut);font-size:14px">
+								O envio de arquivos roda no Mac (<code>python3 -m livrocaixa import</code>). Aqui vê
+								o histórico gravado no livro.
+							</p>{/if}
+						{#if v.sample}<div
+								style="border:2px dashed var(--ln);border-radius:16px;padding:40px;text-align:center;background:var(--sf)"
 							>
-								{r.t} → <b>{r.c}</b>
-							</span><span style="font-size:12px;color:{r.col}">{r.u}</span><button
-								onclick={r.up}
+								<i class="ph ph-upload-simple" style="font-size:32px"></i>
+								<div style="margin-top:6px"><b>Solte aqui</b> os arquivos CSV ou PDF de fatura</div>
+							</div>{/if}
+						<div style={v.card}>
+							<b>{v.real ? 'Histórico de importação' : 'Último envio'}</b>{#each v.files as f}<div
+									style="display:grid;grid-template-columns:1fr 120px 100px;gap:10px;padding:10px 0;border-top:1px solid var(--ln);margin-top:8px;font-size:14px"
+								>
+									<span>{f.n}</span><span style="color:var(--mut)">{f.d}</span><span
+										style="color:{f.c};font-weight:600"
+									>
+										{f.s}
+									</span>
+								</div>{/each}
+							{#if v.sample}<div
+									style="background:var(--mossBg);padding:10px 12px;border-radius:10px;font-size:13px;margin-top:6px"
+								>
+									Conferência de saldo: Itaú Conta fecha em <b style={v.bl}>R$ 8.214,60</b>, igual
+									ao extrato.
+								</div>{/if}
+						</div>
+					</div>
+				{/if}
+
+				{#if v.s.pendencias}
+					<div style="max-width:960px;display:flex;flex-direction:column;gap:14px;animation:up .3s">
+						<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">
+							{v.real
+								? v.pendN + ' pendências no ano'
+								: 'Falta classificar ' + v.pendN + ' compras'}
+						</h1>
+						{#if v.pendEmpty}<div style="{v.card}text-align:center;padding:48px">
+								<i class="ph ph-confetti" style="font-size:32px"></i>
+								<div style="font:600 20px 'Source Serif 4',serif">Tudo classificado</div>
+							</div>{/if}
+						{#if v.real}{#each v.pendSummary as p}<div
+									style="{v.card}padding:14px 16px;font-size:14px"
+								>
+									<b>{p.title}</b> · {p.n}{#if p.detail}
+										<span style="color:var(--mut)"> — {p.detail}</span>{/if}
+								</div>{/each}{:else}{#each v.pend as p}<div
+									style="{v.card}display:flex;gap:14px;align-items:center;padding:12px 16px"
+								>
+									<div
+										role="button"
+										tabindex="0"
+										style="flex:1;cursor:pointer"
+										onclick={p.open}
+										onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && p.open?.()}
+									>
+										<b>{p.loja}</b><br /><span style="font-size:12px;color:var(--mut)">
+											{p.titulo} · {p.date}
+										</span>
+									</div>
+									<span style="font-variant-numeric:tabular-nums;{v.bl}">{p.v}</span>
+									{#if p.sug}<span style="font-size:13px;color:var(--mut)">
+											parece <b style="color:var(--ink)">{p.sug}</b>{#if p.conf}, {p.conf}{/if}
+										</span>{/if}
+									<button onclick={p.ok} style={v.btnP}>Aprovar</button>
+								</div>{/each}{/if}
+					</div>
+				{/if}
+
+				{#if v.s.regras}
+					<div style="max-width:960px;display:flex;flex-direction:column;gap:14px;animation:up .3s">
+						<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Regras de classificação</h1>
+						<div style="color:var(--mut);font-size:14px">
+							A primeira regra que casa vence. Classificações manuais (cadeado) vencem todas.
+						</div>
+						<div style="{v.card}display:flex;gap:10px;align-items:center">
+							<i class="ph ph-flask"></i><input
+								placeholder="Testar: digite uma loja, ex. Uber Trip"
+								value={v.test}
+								oninput={v.setTest}
+								style="flex:1;border:0;background:transparent;color:var(--ink);font-size:14px;outline:0"
+							/><span style="font-size:13px">{v.testRes}</span>
+						</div>
+						{#each v.rules as r}<div
+								style="{v.card}display:flex;gap:12px;align-items:center;padding:10px 16px"
+							>
+								<span style="color:var(--mut);width:20px">{r.i}</span><span
+									style="flex:1;font-size:14px"
+								>
+									{r.t} → <b>{r.c}</b>
+								</span><span style="font-size:12px;color:{r.col}">{r.u}</span><button
+									onclick={r.up}
+									style={v.btn}
+								>
+									↑
+								</button><button onclick={r.dn} style={v.btn}>↓</button>
+							</div>{/each}
+					</div>
+				{/if}
+
+				{#if v.s.referencia}
+					<div style="max-width:960px;display:flex;flex-direction:column;gap:10px;animation:up .3s">
+						<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">
+							Referência ONU · COICOP 2018
+						</h1>
+						<div style="color:var(--mut);font-size:14px">
+							As 13 divisões, quanto gastamos em cada e quais categorias da casa apontam para elas.
+						</div>
+						{#each v.coicop as g}<div style="{v.card}padding:10px 16px">
+								<button
+									onclick={g.tog}
+									style="display:flex;width:100%;gap:12px;border:0;background:transparent;color:var(--ink);font-size:14px;cursor:pointer;text-align:left"
+								>
+									<span style="color:var(--mut);width:24px">{g.k}</span><span style="flex:1">
+										{g.n}
+									</span><span style="font-variant-numeric:tabular-nums;{v.bl}">{g.v}</span><i
+										class={g.ic}
+									></i>
+								</button>
+								{#if g.open}<div style="padding:8px 36px;font-size:13px;color:var(--mut)">
+										Categorias da casa: <b style="color:var(--ink)">{g.cats}</b>
+									</div>{/if}
+							</div>{/each}
+					</div>
+				{/if}
+
+				{#if v.s.conta}
+					<div style="max-width:720px;display:flex;flex-direction:column;gap:14px;animation:up .3s">
+						<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Conta e ajustes</h1>
+						<div style="{v.card}display:flex;flex-direction:column;gap:6px;font-size:14px">
+							<b>Perfil</b>{v.who}{#if v.mail}
+								· {v.mail}{/if}<b style="margin-top:8px"> Pessoas da casa </b>{v.people}<b
+								style="margin-top:8px"
+							>
+								Contas e cartões
+							</b>{v.accounts}
+						</div>
+						<div style="{v.card}display:flex;gap:10px;flex-wrap:wrap">
+							<button onclick={v.toggleDark} style={v.btn}>Tema: {v.themeName}</button><button
+								onclick={v.togglePriv}
 								style={v.btn}
 							>
-								↑
-							</button><button onclick={r.dn} style={v.btn}>↓</button>
-						</div>{/each}
-				</div>
-			{/if}
-
-			{#if v.s.referencia}
-				<div style="max-width:960px;display:flex;flex-direction:column;gap:10px;animation:up .3s">
-					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">
-						Referência ONU · COICOP 2018
-					</h1>
-					<div style="color:var(--mut);font-size:14px">
-						As 13 divisões, quanto gastamos em cada e quais categorias da casa apontam para elas.
-					</div>
-					{#each v.coicop as g}<div style="{v.card}padding:10px 16px">
-							<button
-								onclick={g.tog}
-								style="display:flex;width:100%;gap:12px;border:0;background:transparent;color:var(--ink);font-size:14px;cursor:pointer;text-align:left"
-							>
-								<span style="color:var(--mut);width:24px">{g.k}</span><span style="flex:1">
-									{g.n}
-								</span><span style="font-variant-numeric:tabular-nums;{v.bl}">{g.v}</span><i
-									class={g.ic}
-								></i>
+								Privacidade: {v.privName}
+							</button><button onclick={v.expire} style={v.btn}>
+								Simular sessão expirada
+							</button><button onclick={v.logout} style={v.btn}>
+								<i class="ph ph-sign-out"></i> Sair
 							</button>
-							{#if g.open}<div style="padding:8px 36px;font-size:13px;color:var(--mut)">
-									Categorias da casa: <b style="color:var(--ink)">{g.cats}</b>
-								</div>{/if}
-						</div>{/each}
-				</div>
-			{/if}
-
-			{#if v.s.conta}
-				<div style="max-width:720px;display:flex;flex-direction:column;gap:14px;animation:up .3s">
-					<h1 style="font:600 28px 'Source Serif 4',serif;margin:0">Conta e ajustes</h1>
-					<div style="{v.card}display:flex;flex-direction:column;gap:6px;font-size:14px">
-						<b>Perfil</b>{v.who}{#if v.mail}
-							· {v.mail}{/if}<b style="margin-top:8px"> Pessoas da casa </b>{v.people}<b
-							style="margin-top:8px"
-						>
-							Contas e cartões
-						</b>{v.accounts}
+						</div>
 					</div>
-					<div style="{v.card}display:flex;gap:10px;flex-wrap:wrap">
-						<button onclick={v.toggleDark} style={v.btn}>Tema: {v.themeName}</button><button
-							onclick={v.togglePriv}
-							style={v.btn}
-						>
-							Privacidade: {v.privName}
-						</button><button onclick={v.expire} style={v.btn}>
-							Simular sessão expirada
-						</button><button onclick={v.logout} style={v.btn}>
-							<i class="ph ph-sign-out"></i> Sair
-						</button>
-					</div>
-				</div>
-			{/if}
+				{/if}
 
-			{#if v.s.mobile}
-				<div style="display:flex;gap:28px;flex-wrap:wrap;justify-content:center;animation:up .3s">
-					{#each v.phones as ph}<div>
-							<div style="text-align:center;font-size:13px;color:var(--mut);margin-bottom:8px">
-								{ph.t}
-							</div>
-							<div
-								style="width:320px;height:620px;border:8px solid var(--ink);border-radius:36px;background:var(--bg);padding:18px 14px;overflow:hidden;display:flex;flex-direction:column;gap:10px"
-							>
-								<div style="font:600 20px/1.25 'Source Serif 4',serif">{ph.h}</div>
-								{#each ph.rows as r}<div
-										style="{v.card}padding:10px 12px;display:flex;justify-content:space-between;font-size:13px;gap:8px"
-									>
-										<span>{r.a}</span><b style="font-variant-numeric:tabular-nums;{v.bl}">{r.b}</b>
-									</div>{/each}
-								<div style="flex:1"></div>
-								<div
-									style="display:flex;justify-content:space-around;border-top:1px solid var(--ln);padding-top:8px;font-size:11px;color:var(--mut)"
-								>
-									<span>Hoje</span><span>Entender</span><span>Viver</span><span>
-										Planejar
-									</span><span>Cuidar</span>
+				{#if v.s.mobile}
+					<div style="display:flex;gap:28px;flex-wrap:wrap;justify-content:center;animation:up .3s">
+						{#each v.phones as ph}<div>
+								<div style="text-align:center;font-size:13px;color:var(--mut);margin-bottom:8px">
+									{ph.t}
 								</div>
-							</div>
-						</div>{/each}
-				</div>
+								<div
+									style="width:320px;height:620px;border:8px solid var(--ink);border-radius:36px;background:var(--bg);padding:18px 14px;overflow:hidden;display:flex;flex-direction:column;gap:10px"
+								>
+									<div style="font:600 20px/1.25 'Source Serif 4',serif">{ph.h}</div>
+									{#each ph.rows as r}<div
+											style="{v.card}padding:10px 12px;display:flex;justify-content:space-between;font-size:13px;gap:8px"
+										>
+											<span>{r.a}</span><b style="font-variant-numeric:tabular-nums;{v.bl}">
+												{r.b}
+											</b>
+										</div>{/each}
+									<div style="flex:1"></div>
+									<div
+										style="display:flex;justify-content:space-around;border-top:1px solid var(--ln);padding-top:8px;font-size:11px;color:var(--mut)"
+									>
+										<span>Hoje</span><span>Entender</span><span>Viver</span><span>
+											Planejar
+										</span><span>Cuidar</span>
+									</div>
+								</div>
+							</div>{/each}
+					</div>
+				{/if}
 			{/if}
 		</main>
 	</div>
