@@ -4,23 +4,24 @@ active_epic: e02
 active_branch: feat/e02-onda-2-topbar-taxonomy
 last_merged_pr: 6
 commit_sha: f7e65a8
-status: in_progress
+status: pr_ready
 epic_cycle:
   epic: e02
-  story: e02s01
-  step: 3
-  story_bcps: 2
-  audit_result: pending
+  story: e02s03
+  step: 8
+  story_bcps: 6
+  audit_result: pass
+  review_result: pass
 steps:
   step_1_audit_and_cleanup: done
   step_2_deferred_items: done
   step_3_neon_and_cloud_sync: done
   step_4_strangler_fig_phase2: done
   e01_onda_1_ui_primitives: done
-  e02_onda_2_topbar_taxonomy: in_progress
+  e02_onda_2_topbar_taxonomy: done
 handoff:
-  next_skill: build-epic
-  context: 'Starting execution of Epic e02 (Onda 2 — Contrato da Topbar & Taxonomia) on feat/e02-onda-2-topbar-taxonomy.'
+  next_skill: release-branch
+  context: 'All 3 stories of Epic e02 (Onda 2) built, verified, audited, and tested on feat/e02-onda-2-topbar-taxonomy. Ready for Phase 4 Ship.'
 decisions:
   - id: D-001
     gate: strangler_fig_phase2
@@ -43,3 +44,6 @@ decisions:
   - id: D-007
     gate: planning_spine_e02
     reason: Scoped Epic e02 (Onda 2), created tasks and threat model, initialized feat/e02-onda-2-topbar-taxonomy autonomously.
+  - id: D-008
+    gate: audit_code_e02
+    reason: Self-audit passed all criteria (typecheck, lint, 47 vitest tests, Playwright E2E, preflight clean). Proceeding to Phase 4 Ship.
