@@ -7,7 +7,7 @@ commit_sha: 2248337
 status: in_progress
 epic_cycle:
   epic: e01
-  story: e01s01
+  story: e01s02
   step: 4
   story_bcps: 3
   audit_result: pending
