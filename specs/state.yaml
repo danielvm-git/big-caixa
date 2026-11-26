@@ -1,16 +1,10 @@
 version: 1
 active_flow: build_epic
-active_epic: e03
-active_branch: feat/e03-onda-3-native-routing
-last_merged_pr: 7
-commit_sha: bfe5c8c
-status: pr_ready
-epic_cycle:
-  epic: e03
-  story: e03s03
-  step: 8
-  story_bcps: 6
-  audit_result: pass
+active_epic: null
+active_branch: main
+last_merged_pr: 8
+commit_sha: 4470ae1
+status: done
 steps:
   step_1_audit_and_cleanup: done
   step_2_deferred_items: done
@@ -20,8 +14,8 @@ steps:
   e02_onda_2_topbar_taxonomy: done
   e03_onda_3_native_routing: done
 handoff:
-  next_skill: release-branch
-  context: 'Epic e03 (Onda 3 — Roteamento Real & Modularização de Stores) completed and verified. Ready to release via PR.'
+  next_skill: orchestrate-project
+  context: 'Onda 3 (Epic e03) successfully built, verified, merged via PR #8, and deployed to BigBase.'
 decisions:
   - id: D-001
     gate: strangler_fig_phase2
@@ -56,3 +50,6 @@ decisions:
   - id: D-011
     gate: audit_code_e03
     reason: Self-audit passed all criteria (typecheck, lint, 52 vitest tests, AppShell slots, modular views and stores, preflight clean). Proceeding to Phase 4 Ship.
+  - id: D-012
+    gate: release_branch_e03
+    reason: Released feat/e03-onda-3-native-routing via PR #8, verified all CI checks, squash-merged to main, verified CI and production deployment to BigBase.

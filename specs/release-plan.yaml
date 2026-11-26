@@ -28,7 +28,7 @@ epics:
     title: 'Onda 3 — Roteamento Real & Modularização de Stores (AppShell & SvelteKit Routes)'
     wsjf: 9.0
     bcps: 6
-    status: in_progress
+    status: done
     capsule: specs/epics/e03-onda-3/
     stories:
       - e03s01
