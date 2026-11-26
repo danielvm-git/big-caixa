@@ -8,9 +8,9 @@ status: in_progress
 epic_cycle:
   epic: e01
   story: e01s03
-  step: 4
+  step: 6
   story_bcps: 2
-  audit_result: pending
+  audit_result: pass
 steps:
   step_1_audit_and_cleanup: done
   step_2_deferred_items: done
@@ -27,3 +27,6 @@ decisions:
   - id: D-003
     gate: kickoff_branch_e01
     reason: Created feature branch feat/e01-onda-1-ui-primitives from clean, green main (2248337) to isolate all epic commits without touching main.
+  - id: D-004
+    gate: audit_code_e01
+    reason: Self-audit passed all sections (security, types, scope, Boy Scout, F.I.R.S.T tests); advancing to independent request-review.
