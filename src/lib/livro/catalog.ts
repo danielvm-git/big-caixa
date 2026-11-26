@@ -164,7 +164,7 @@ export function escopoNome(id: string | null | undefined): string {
 	return id || '';
 }
 
-const MESES = [
+export const MESES = [
 	'janeiro',
 	'fevereiro',
 	'março',

@@ -9,6 +9,7 @@
 	import AiSubscriptionsView from '$lib/livro/AiSubscriptionsView.svelte';
 	import ViagensFeriasView from '$lib/livro/ViagensFeriasView.svelte';
 	import VisaoGeralView from '$lib/livro/VisaoGeralView.svelte';
+	import { LedgerContextBar } from '$lib/ui';
 	import { book } from '$lib/livro/book.svelte';
 	let v = $derived(book.view());
 
@@ -63,13 +64,7 @@
 			onclick={v.openClose}
 			style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;border:1px dashed var(--ink);background:transparent;color:var(--ink);font-size:13px;font-weight:600;cursor:pointer"
 		>
-			<i class="ph ph-flag-banner" style="font-size:18px"></i>Fechar outubro
-		</button>
-		<button
-			onclick={v.goMobile}
-			style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;border:0;background:transparent;color:var(--mut);font-size:13px;cursor:pointer"
-		>
-			<i class="ph ph-device-mobile" style="font-size:18px"></i>Ver no celular
+			<i class="ph ph-flag-banner" style="font-size:18px"></i>{v.fecharMesLabel}
 		</button>
 	</aside>
 
@@ -85,24 +80,16 @@
 				</button>{/if}
 			<div style="font-size:13px;color:var(--mut)">{v.crumb}</div>
 			<div style="flex:1"></div>
-			<button
-				onclick={v.cyclePer}
-				style="display:flex;gap:6px;align-items:center;padding:5px 11px;border-radius:999px;border:1px solid var(--ln);background:var(--sf);color:var(--ink);font-size:13px;cursor:pointer"
-			>
-				<i class="ph ph-calendar-blank"></i>{v.perLabel}
-			</button>
-			<button
-				onclick={v.cycleEsc}
-				style="display:flex;gap:6px;align-items:center;padding:5px 11px;border-radius:999px;border:1px solid var(--ln);background:var(--sf);color:var(--ink);font-size:13px;cursor:pointer"
-			>
-				<i class="ph ph-house-line"></i>{v.escLabel}
-			</button>
-			<button
-				onclick={v.toggleBase}
-				style="display:flex;gap:6px;align-items:center;padding:5px 11px;border-radius:999px;border:1px solid var(--ln);background:var(--sf);color:var(--ink);font-size:13px;cursor:pointer"
-			>
-				<i class="ph ph-scales"></i>Base: {v.baseLabel}
-			</button>
+			{#if v.showLedgerContext}
+				<LedgerContextBar
+					perLabel={v.perLabel}
+					escLabel={v.escLabel}
+					baseLabel={v.baseLabel}
+					onCyclePer={v.cyclePer}
+					onCycleEsc={v.cycleEsc}
+					onToggleBase={v.toggleBase}
+				/>
+			{/if}
 			<button
 				onclick={v.openCmd}
 				style="display:flex;gap:8px;align-items:center;padding:5px 11px;border-radius:8px;border:1px solid var(--ln);background:var(--sf);color:var(--mut);font-size:13px;cursor:pointer"
@@ -134,25 +121,27 @@
 				R
 			</button>
 		</header>
-		<div
-			style="padding:8px 24px;border-bottom:1px solid var(--ln);display:flex;gap:8px;align-items:center;font-size:12px;color:var(--mut);flex-wrap:wrap"
-		>
-			Mostrando:
-			<span style={v.chipS}>{v.perLabel}</span><span style={v.chipS}>{v.escLabel}</span><span
-				style={v.chipS}
+		{#if v.showLedgerContext}
+			<div
+				style="padding:8px 24px;border-bottom:1px solid var(--ln);display:flex;gap:8px;align-items:center;font-size:12px;color:var(--mut);flex-wrap:wrap"
 			>
-				{v.baseLabel}
-			</span>
-			{#if v.filt}<span style="{v.chipS}background:var(--sun);color:var(--onsun)">
-					{v.filtLabel}
-					<button
-						onclick={v.clearFilt}
-						style="border:0;background:transparent;color:inherit;cursor:pointer;padding:0"
-					>
-						×
-					</button>
-				</span>{/if}
-		</div>
+				Mostrando:
+				<span style={v.chipS}>{v.perLabel}</span><span style={v.chipS}>{v.escLabel}</span><span
+					style={v.chipS}
+				>
+					{v.baseLabel}
+				</span>
+				{#if v.filt}<span style="{v.chipS}background:var(--sun);color:var(--onsun)">
+						{v.filtLabel}
+						<button
+							onclick={v.clearFilt}
+							style="border:0;background:transparent;color:inherit;cursor:pointer;padding:0"
+						>
+							×
+						</button>
+					</span>{/if}
+			</div>
+		{/if}
 
 		<main style="flex:1;overflow:auto;padding:24px;position:relative">
 			{#if v.gap}
@@ -941,7 +930,7 @@
 							</button>.
 						</p>{/if}
 					{#if v.sample && v.cs.s4}<h1 style="font:600 32px 'Source Serif 4',serif;margin:0">
-							Como foi outubro?
+							Como foi {v.fecharMesNome}?
 						</h1>
 						<div style="{v.card}font-size:14px">
 							Gastamos <b style={v.bl}>R$ 18.400</b>, 1% abaixo do ritmo normal. Maior categoria:
