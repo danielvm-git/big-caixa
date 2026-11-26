@@ -17,7 +17,7 @@ epics:
     title: 'Onda 2 — Contrato da Topbar & Taxonomia (Sidebar & Ledger Context)'
     wsjf: 9.2
     bcps: 6
-    status: in_progress
+    status: done
     capsule: specs/epics/e02-onda-2/
     stories:
       - e02s01

@@ -1,10 +1,10 @@
 version: 1
-active_flow: build_epic
+active_flow: idle
 active_epic: e02
-active_branch: feat/e02-onda-2-topbar-taxonomy
-last_merged_pr: 6
-commit_sha: f7e65a8
-status: pr_ready
+active_branch: main
+last_merged_pr: 7
+commit_sha: 204b6de
+status: done
 epic_cycle:
   epic: e02
   story: e02s03
@@ -20,8 +20,8 @@ steps:
   e01_onda_1_ui_primitives: done
   e02_onda_2_topbar_taxonomy: done
 handoff:
-  next_skill: release-branch
-  context: 'All 3 stories of Epic e02 (Onda 2) built, verified, audited, and tested on feat/e02-onda-2-topbar-taxonomy. Ready for Phase 4 Ship.'
+  next_skill: none
+  context: 'Epic e02 (Onda 2 — Contrato da Topbar & Taxonomia) successfully shipped and merged via PR #7 into main (commit 204b6de).'
 decisions:
   - id: D-001
     gate: strangler_fig_phase2
@@ -47,3 +47,6 @@ decisions:
   - id: D-008
     gate: audit_code_e02
     reason: Self-audit passed all criteria (typecheck, lint, 47 vitest tests, Playwright E2E, preflight clean). Proceeding to Phase 4 Ship.
+  - id: D-009
+    gate: release_branch_e02
+    reason: Released feat/e02-onda-2-topbar-taxonomy via PR #7, repaired Prettier markdown formatting in CI, verified green checks, squash-merged, and cleaned branch.
