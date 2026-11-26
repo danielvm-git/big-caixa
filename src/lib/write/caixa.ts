@@ -1,11 +1,14 @@
+import { AUTH_MODE } from '$lib/auth/api';
 import { getSession } from '$lib/auth/session';
 import { log } from '$lib/log';
 
-function escritaBase(): string {
+export function escritaBase(): string {
 	const fromEnv =
 		(import.meta.env.VITE_CAIXA_ESCRITA_URL as string | undefined) ||
 		(import.meta.env.VITE_CAIXA_URL as string | undefined)?.replace(/\/leitura\/?$/, '/escrita');
-	return (fromEnv ?? '').replace(/\/$/, '');
+	if (fromEnv) return fromEnv.replace(/\/$/, '');
+	if (AUTH_MODE === 'local' || !import.meta.env.PROD) return 'http://localhost:8787';
+	return '';
 }
 
 export async function caixaWrite(payload: Record<string, unknown>): Promise<void> {

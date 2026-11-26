@@ -1,5 +1,6 @@
 import {
 	loadBlocos,
+	loadBootstrap,
 	loadCompras,
 	loadContratos,
 	loadContas,
@@ -17,7 +18,7 @@ import {
 	loadViagens
 } from '$lib/read-model/client';
 import { getSession } from '$lib/auth/session';
-import { categoria } from './catalog';
+import { categoria, divisaoDe, COICOP_DIVISOES } from './catalog';
 import type {
 	BlocoDoc,
 	CompraDoc,
@@ -87,7 +88,9 @@ export function totalResumo(r: MesResumo): number {
 function medianaDe(xs: number[]): number {
 	const s = xs.filter((x) => Number.isFinite(x)).sort((a, b) => a - b);
 	if (!s.length) return 0;
-	return s.length % 2 === 1 ? s[s.length / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2;
+	return s.length % 2 === 1
+		? s[Math.floor(s.length / 2)]
+		: (s[s.length / 2 - 1] + s[s.length / 2]) / 2;
 }
 
 export const mediana = medianaDe;
@@ -135,12 +138,67 @@ export type VisaoLinha = {
 	cells: VisaoCelula[];
 	media: number;
 	total: number;
-	kind: 'summary' | 'category';
+	kind: 'summary' | 'division' | 'category';
 	categoriaId?: string;
+	divisaoId?: string;
+	childCount?: number;
 };
 
-function entradaMes(ledger: Ledger, mes: string, ano: number, mesAtual: string): VisaoCelula {
+export type PerspectivaVisao = 'consolidado' | 'pessoal' | 'casa';
+
+function entradaMesPerspectiva(
+	ledger: Ledger,
+	mes: string,
+	ano: number,
+	mesAtual: string,
+	perspectiva: PerspectivaVisao
+): VisaoCelula {
 	const links = ledger.sankey[mes] ?? [];
+	if (perspectiva === 'casa') {
+		const repasseDaniel = 10000;
+		const outros = links
+			.filter((l) => l.nivel === 1 && l.destino === 'Pool Casa' && l.origem !== 'Salário líquido')
+			.reduce((a, l) => a + l.valor, 0);
+		const v = repasseDaniel + outros;
+		if (mes <= mesAtual) return { v, projetado: false };
+		const pastVals = Array.from({ length: 12 }, (_, i) => {
+			const k = chave(ano, i + 1);
+			if (k > mesAtual) return 0;
+			const lk = ledger.sankey[k] ?? [];
+			const o = lk
+				.filter((l) => l.nivel === 1 && l.destino === 'Pool Casa' && l.origem !== 'Salário líquido')
+				.reduce((a, l) => a + l.valor, 0);
+			return 10000 + o;
+		}).filter((x) => x > 0);
+		return { v: medianaDe(pastVals.length ? pastVals : [16121]), projetado: true };
+	}
+	if (perspectiva === 'pessoal') {
+		const salario = links
+			.filter((l) => l.nivel === 1 && l.origem === 'Salário líquido')
+			.reduce((a, l) => a + l.valor, 0);
+		const outros = links
+			.filter(
+				(l) => l.nivel === 1 && l.destino === 'Pool Pessoal' && l.origem !== 'Salário líquido'
+			)
+			.reduce((a, l) => a + l.valor, 0);
+		const v = salario + outros;
+		if (mes <= mesAtual) return { v, projetado: false };
+		const pastVals = Array.from({ length: 12 }, (_, i) => {
+			const k = chave(ano, i + 1);
+			if (k > mesAtual) return 0;
+			const lk = ledger.sankey[k] ?? [];
+			const s = lk
+				.filter((l) => l.nivel === 1 && l.origem === 'Salário líquido')
+				.reduce((a, l) => a + l.valor, 0);
+			const o = lk
+				.filter(
+					(l) => l.nivel === 1 && l.destino === 'Pool Pessoal' && l.origem !== 'Salário líquido'
+				)
+				.reduce((a, l) => a + l.valor, 0);
+			return s + o;
+		}).filter((x) => x > 0);
+		return { v: medianaDe(pastVals.length ? pastVals : [26000]), projetado: true };
+	}
 	const direto = links.filter((l) => l.nivel === 1).reduce((a, l) => a + l.valor, 0);
 	if (mes <= mesAtual && direto > 0) return { v: direto, projetado: false };
 	if (mes <= mesAtual) return { v: 0, projetado: false };
@@ -153,25 +211,21 @@ function entradaMes(ledger: Ledger, mes: string, ano: number, mesAtual: string):
 	return { v: medianaDe(vals.length ? vals : [0]), projetado: true };
 }
 
-function saidaMes(ledger: Ledger, mes: string, ano: number, mesAtual: string): VisaoCelula {
-	const rows = ledger.months[mes] ?? [];
-	if (rows.length && mes <= mesAtual) return { v: soma(rows), projetado: false };
-	if (mes > mesAtual) {
-		const proj = carregarAno(ledger, ano).find((r) => r.mes === mes);
-		return { v: proj ? totalResumo(proj) : 0, projetado: true };
-	}
-	return { v: 0, projetado: false };
-}
-
-function categoriaMes(
+function categoriaMesPerspectiva(
 	ledger: Ledger,
 	mes: string,
 	catId: string,
 	ano: number,
 	mesAtual: string,
-	medianaCat: number
+	medianaCat: number,
+	perspectiva: PerspectivaVisao
 ): VisaoCelula {
-	const rows = (ledger.months[mes] ?? []).filter((r) => r.categoria_id === catId);
+	const allRows = (ledger.months[mes] ?? []).filter((r) => r.categoria_id === catId);
+	const rows = allRows.filter((r) => {
+		if (perspectiva === 'casa') return r.escopo === 'casa';
+		if (perspectiva === 'pessoal') return r.escopo !== 'casa';
+		return true;
+	});
 	if (rows.length && mes <= mesAtual) return { v: soma(rows), projetado: false };
 	if (mes > mesAtual) return { v: medianaCat, projetado: medianaCat > 0 };
 	return { v: 0, projetado: false };
@@ -190,28 +244,152 @@ function statsLinha(cells: VisaoCelula[]): { media: number; total: number } {
 	return { media, total };
 }
 
-/** Planilha 12×categorias + entradas, saídas e saldo. */
-export function visaoGeralAno(ledger: Ledger, ano: number): VisaoLinha[] {
+/** Planilha 12×categorias + entradas, saídas e saldo, estruturada em árvore COICOP por perspectiva (casa, pessoal, consolidado). */
+export function visaoGeralAno(
+	ledger: Ledger,
+	ano: number,
+	perspectiva: PerspectivaVisao = 'consolidado'
+): VisaoLinha[] {
 	const mesAtual = ledger.mesAtual;
 	const keys = Array.from({ length: 12 }, (_, i) => chave(ano, i + 1));
 	const catIds = new Set<string>();
+
 	for (const key of keys) {
 		for (const row of ledger.months[key] ?? []) {
-			if (row.categoria_id) catIds.add(row.categoria_id);
+			if (!row.categoria_id) continue;
+			if (perspectiva === 'casa' && row.escopo !== 'casa') continue;
+			if (perspectiva === 'pessoal' && row.escopo === 'casa') continue;
+			catIds.add(row.categoria_id);
 		}
 	}
+	if (perspectiva === 'pessoal') {
+		catIds.add('repasse_casa');
+	}
+
 	const catList = [...catIds].sort();
 	const medianaPorCat = new Map<string, number>();
 	for (const id of catList) {
+		if (id === 'repasse_casa') {
+			medianaPorCat.set(id, 10000);
+			continue;
+		}
 		const vals = keys
 			.filter((k) => k <= mesAtual)
-			.map((k) => soma((ledger.months[k] ?? []).filter((r) => r.categoria_id === id)))
+			.map((k) => {
+				const rows = (ledger.months[k] ?? []).filter((r) => {
+					if (r.categoria_id !== id) return false;
+					if (perspectiva === 'casa') return r.escopo === 'casa';
+					if (perspectiva === 'pessoal') return r.escopo !== 'casa';
+					return true;
+				});
+				return soma(rows);
+			})
 			.filter((v) => v > 0);
 		medianaPorCat.set(id, medianaDe(vals));
 	}
 
-	const entradas = keys.map((k) => entradaMes(ledger, k, ano, mesAtual));
-	const saidas = keys.map((k) => saidaMes(ledger, k, ano, mesAtual));
+	// Group categories by COICOP division
+	const divGroups = new Map<
+		string,
+		{ divisao: { codigo: string; nome: string }; cats: string[] }
+	>();
+	const divOrder = [
+		'01',
+		'02',
+		'03',
+		'04',
+		'05',
+		'06',
+		'07',
+		'08',
+		'09',
+		'10',
+		'11',
+		'12',
+		'13',
+		'X',
+		'OUTROS'
+	];
+	for (const d of divOrder) {
+		divGroups.set(d, { divisao: COICOP_DIVISOES[d] || { codigo: d, nome: d }, cats: [] });
+	}
+
+	for (const id of catList) {
+		const div = divisaoDe(id);
+		if (!divGroups.has(div.codigo)) {
+			divGroups.set(div.codigo, { divisao: div, cats: [] });
+		}
+		divGroups.get(div.codigo)!.cats.push(id);
+	}
+
+	const divisionRows: VisaoLinha[] = [];
+	for (const [divCodigo, group] of divGroups.entries()) {
+		if (!group.cats.length) continue;
+
+		// Compute cells for each child category
+		const catRows: VisaoLinha[] = [];
+		for (const id of group.cats) {
+			let cells: VisaoCelula[];
+			if (id === 'repasse_casa') {
+				cells = keys.map((k) => ({ v: 10000, projetado: k > mesAtual }));
+			} else {
+				cells = keys.map((k) =>
+					categoriaMesPerspectiva(
+						ledger,
+						k,
+						id,
+						ano,
+						mesAtual,
+						medianaPorCat.get(id) ?? 0,
+						perspectiva
+					)
+				);
+			}
+			catRows.push({
+				label: categoria(id).nome || id,
+				cells,
+				...statsLinha(cells),
+				kind: 'category',
+				categoriaId: id,
+				divisaoId: divCodigo
+			});
+		}
+
+		// Sort child categories descending by total spend
+		catRows.sort((a, b) => b.total - a.total);
+
+		// Aggregate division cells across months
+		const divCells: VisaoCelula[] = keys.map((_, mIdx) => {
+			const monthSum = catRows.reduce((acc, cr) => acc + (cr.cells[mIdx]?.v || 0), 0);
+			const isProj = catRows.some((cr) => cr.cells[mIdx]?.projetado && cr.cells[mIdx]?.v > 0);
+			return { v: monthSum, projetado: isProj };
+		});
+
+		// Division summary row
+		divisionRows.push({
+			label: `${group.divisao.codigo} · ${group.divisao.nome}`,
+			cells: divCells,
+			...statsLinha(divCells),
+			kind: 'division',
+			divisaoId: divCodigo,
+			childCount: catRows.length
+		});
+
+		// Add category rows
+		divisionRows.push(...catRows);
+	}
+
+	// Compute summary rows
+	const entradas = keys.map((k) => entradaMesPerspectiva(ledger, k, ano, mesAtual, perspectiva));
+	const saidas: VisaoCelula[] = keys.map((_, mIdx) => {
+		const monthSum = divisionRows
+			.filter((r) => r.kind === 'division')
+			.reduce((acc, dr) => acc + (dr.cells[mIdx]?.v || 0), 0);
+		const isProj = divisionRows
+			.filter((r) => r.kind === 'division')
+			.some((dr) => dr.cells[mIdx]?.projetado);
+		return { v: monthSum, projetado: isProj };
+	});
 	const saldos = keys.map((k, i) => ({
 		v: entradas[i].v - saidas[i].v,
 		projetado: entradas[i].projetado || saidas[i].projetado
@@ -220,20 +398,10 @@ export function visaoGeralAno(ledger: Ledger, ano: number): VisaoLinha[] {
 	const rows: VisaoLinha[] = [
 		{ label: 'Saldo', cells: saldos, ...statsLinha(saldos), kind: 'summary' },
 		{ label: 'Entradas', cells: entradas, ...statsLinha(entradas), kind: 'summary' },
-		{ label: 'Saídas', cells: saidas, ...statsLinha(saidas), kind: 'summary' }
+		{ label: 'Saídas', cells: saidas, ...statsLinha(saidas), kind: 'summary' },
+		...divisionRows
 	];
-	for (const id of catList) {
-		const cells = keys.map((k) =>
-			categoriaMes(ledger, k, id, ano, mesAtual, medianaPorCat.get(id) ?? 0)
-		);
-		rows.push({
-			label: categoria(id).nome || id,
-			cells,
-			...statsLinha(cells),
-			kind: 'category',
-			categoriaId: id
-		});
-	}
+
 	return rows;
 }
 
@@ -542,6 +710,19 @@ export async function fetchLedger(): Promise<Ledger | null> {
 	const year = now.getFullYear();
 	const month = now.getMonth() + 1;
 	const mesAtual = chave(year, month);
+	try {
+		const boot = await loadBootstrap(mesAtual);
+		if (boot) {
+			return {
+				year,
+				month,
+				mesAtual,
+				...boot
+			};
+		}
+	} catch {
+		// Fallback to per-collection loading if /bootstrap is not deployed yet.
+	}
 	const keys = chavesHistorico(year, month);
 	const months: Record<string, MesDoc[]> = {};
 	const sankey: Record<string, SankeyDoc[]> = {};
@@ -617,11 +798,16 @@ export function resumoDevem(vinculos: VinculoDoc[]): {
 	let aReceber = 0;
 	let voltou = 0;
 	for (const v of vinculos) {
-		const val = (v.valor_centavos || 0) / 100;
-		if (v.status === 'quitado') voltou += val;
+		const orig = v.valor_original ?? (v.valor_centavos || 0) / 100;
 		if (v.tipo === 'emprestimo' || v.tipo === 'ajuda') {
-			emprestado += val;
-			if (v.status !== 'quitado') aReceber += val;
+			emprestado += orig;
+			if (v.saldo_devedor !== undefined) {
+				aReceber += v.saldo_devedor;
+				voltou += v.total_pago ?? Math.max(0, orig - v.saldo_devedor);
+			} else {
+				if (v.status === 'quitado') voltou += orig;
+				else aReceber += orig;
+			}
 		}
 	}
 	const taxa = emprestado > 0 ? voltou / emprestado : 0;

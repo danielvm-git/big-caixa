@@ -8,15 +8,34 @@ const ORIGINS = new Set(
 	].filter(Boolean)
 );
 
-const pool = new Pool({
-	connectionString: process.env.DATABASE_URL,
-	max: 5,
-	ssl: { rejectUnauthorized: false }
-});
-pool.on('error', (err) => {
-	const msg = String(err?.message ?? err).replace(/postgres(?:ql)?:\/\/\S+/gi, 'postgresql://***');
-	console.error(JSON.stringify({ event: 'pool', message: msg }));
-});
+let _pool = null;
+function getPool() {
+	if (!_pool) {
+		const connStr = process.env.DATABASE_URL;
+		if (!connStr) {
+			throw new Error('DATABASE_URL is required');
+		}
+		const isLocal = connStr.includes('localhost') || connStr.includes('127.0.0.1');
+		_pool = new Pool({
+			connectionString: connStr,
+			max: 5,
+			ssl: isLocal ? false : { rejectUnauthorized: true }
+		});
+		_pool.on('error', (err) => {
+			const msg = String(err?.message ?? err).replace(
+				/postgres(?:ql)?:\/\/\S+/gi,
+				'postgresql://***'
+			);
+			console.error(JSON.stringify({ event: 'pool', message: msg }));
+		});
+	}
+	return _pool;
+}
+
+const pool = {
+	query: (...args) => getPool().query(...args),
+	on: (...args) => getPool().on(...args)
+};
 
 const jwksUrl = process.env.NEON_AUTH_JWKS_URL;
 const authBase = process.env.NEON_AUTH_BASE_URL;
@@ -26,7 +45,12 @@ const issuer = authBase ? new URL(authBase).origin : null;
 function allowedOrigin(origin) {
 	if (!origin) return null;
 	if (ORIGINS.has(origin)) return origin;
-	if (/^https?:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)) return origin;
+	if (
+		process.env.LOCAL_DEV === 'true' &&
+		/^https?:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)
+	) {
+		return origin;
+	}
 	return null;
 }
 
@@ -47,6 +71,9 @@ function json(status, body, origin) {
 }
 
 async function userId(request) {
+	if (process.env.LOCAL_DEV === 'true') {
+		return 'local-user';
+	}
 	const auth = request.headers.get('authorization') ?? '';
 	if (!auth.toLowerCase().startsWith('bearer ') || !jwks || !issuer) return null;
 	try {
@@ -153,10 +180,13 @@ async function rows(colecao, periodo) {
 		const q = await pool.query(
 			`SELECT v.id, v.chave, v.nome, v.destino, v.ida, v.volta, v.nota,
 			        v.margem, v.empresa,
+			        coalesce(sum(c.valor_total_centavos)/100.0, 0)::float8 AS total_gasto,
+			        coalesce(json_agg(json_build_object('id', c.id, 'data', c.data, 'loja', c.loja, 'titulo', c.titulo, 'valor', (c.valor_total_centavos/100.0)::float8)) FILTER (WHERE c.id IS NOT NULL), '[]') AS compras,
 			        coalesce(json_agg(vc.compra_id) FILTER (WHERE vc.compra_id IS NOT NULL), '[]') AS compra_ids
 			 FROM caixa.viagem v
 			 LEFT JOIN caixa.viagem_compra vc ON vc.viagem_id = v.id
-			 GROUP BY v.id
+			 LEFT JOIN caixa.compra c ON c.id = vc.compra_id
+			 GROUP BY v.id, v.chave, v.nome, v.destino, v.ida, v.volta, v.nota, v.margem, v.empresa
 			 ORDER BY v.ida DESC`
 		);
 		return q.rows;
@@ -241,10 +271,56 @@ async function rows(colecao, periodo) {
 	}
 	if (colecao === 'vinculos') {
 		const q = await pool.query(
-			`SELECT id, tipo, de_pessoa_id, para_pessoa_id, compra_id,
-			        valor_centavos::float8 AS valor_centavos,
-			        parcelas, juros_pct::float8 AS juros_pct, prazo, status, coalesce(nota, '') AS nota
-			 FROM caixa.fato_vinculo ORDER BY criado_em DESC`
+			`SELECT 
+				v.id,
+				v.tipo,
+				v.de_pessoa_id,
+				v.para_pessoa_id,
+				coalesce(p.name, v.para_pessoa_id) AS para_pessoa_nome,
+				coalesce(p.relationship, 'outro') AS para_pessoa_relacao,
+				v.compra_id,
+				(v.valor_centavos / 100.0)::float8 AS valor_original,
+				v.valor_centavos::float8 AS valor_centavos,
+				v.parcelas,
+				v.juros_pct::float8 AS juros_pct,
+				v.prazo,
+				v.status,
+				coalesce(v.nota, '') AS nota,
+				v.criado_em,
+				coalesce(acc.code, '') AS conta_codigo,
+				coalesce(acc.name, '') AS conta_nome,
+				coalesce(pag.total_pago, 0)::float8 AS total_pago,
+				coalesce(saldo.saldo_devedor, v.valor_centavos / 100.0)::float8 AS saldo_devedor,
+				coalesce(hist.items, '[]'::json) AS historico
+			 FROM caixa.fato_vinculo v
+			 LEFT JOIN core.person p ON p.id = v.para_pessoa_id
+			 LEFT JOIN core.account acc ON (
+				(v.id = 'vinc_jorginho_karina' AND acc.code = '1.1.04.001') OR
+				(v.id = 'vinc_aluizio_fabiana' AND acc.code = '1.1.04.002') OR
+				(v.id = 'vinc_mae_lilian_50k' AND acc.code = '1.1.04.003')
+			 )
+			 LEFT JOIN LATERAL (
+				SELECT sum(je.amount) AS total_pago
+				FROM core.journal_entry je
+				WHERE je.account_id = acc.id AND je.entry_type = 'C'
+			 ) pag ON true
+			 LEFT JOIN LATERAL (
+				SELECT sum(CASE WHEN je.entry_type = 'D' THEN je.amount ELSE -je.amount END) AS saldo_devedor
+				FROM core.journal_entry je
+				WHERE je.account_id = acc.id
+			 ) saldo ON true
+			 LEFT JOIN LATERAL (
+				SELECT json_agg(json_build_object(
+					'data', to_char(t.date, 'YYYY-MM-DD'),
+					'descricao', t.description,
+					'valor', je.amount::float8,
+					'memo', coalesce(je.memo, '')
+				) ORDER BY t.date ASC) AS items
+				FROM core.journal_entry je
+				JOIN core.transaction t ON t.id = je.transaction_id
+				WHERE je.account_id = acc.id AND je.entry_type = 'C'
+			 ) hist ON true
+			 ORDER BY v.status ASC, v.criado_em DESC`
 		);
 		return q.rows;
 	}
@@ -278,6 +354,148 @@ async function rows(colecao, periodo) {
 		);
 		return q.rows;
 	}
+	if (colecao === 'entradas') {
+		const ano = ANO.test(periodo ?? '') ? parseInt(periodo, 10) : new Date().getFullYear();
+		const q = await pool.query(
+			`SELECT ano, origem, tipo_id, tipo_nome, tipo_slug,
+			        jan, fev, mar, abr, mai, jun, jul, ago, set_val AS set, out_val AS out, nov, dez, total
+			 FROM caixa.v_entrada_mensal
+			 WHERE ano = $1
+			 ORDER BY total DESC`,
+			[ano]
+		);
+		return q.rows;
+	}
+	if (colecao === 'entradas_transacoes') {
+		const q = await pool.query(
+			`SELECT transacao_id, data, periodo, ano, mes_num, descricao, origem, tipo_id, tipo_nome, tipo_slug, valor
+			 FROM caixa.v_entrada_transacao
+			 WHERE ($1::text IS NULL OR periodo = $1 OR ano::text = $1)
+			 ORDER BY data DESC, transacao_id DESC
+			 LIMIT 300`,
+			[periodo]
+		);
+		return q.rows;
+	}
+	if (colecao === 'tipos_entrada') {
+		const q = await pool.query(
+			`SELECT code AS id, name AS nome, coalesce(legacy_cat_id, 'outras_receitas') AS slug
+			 FROM core.account
+			 WHERE account_group = 'Revenues' AND code != '4'
+			 ORDER BY code`
+		);
+		return q.rows;
+	}
+	if (colecao === 'ai_subscriptions') {
+		const q = await pool.query(
+			`SELECT id, provider_key, name, category, plan_name, billing_cycle,
+			        cost_usd::float8, cost_brl::float8, balance_usd::float8,
+			        total_spent_usd::float8, month_spent_usd::float8,
+			        renewal_date, auto_renew, status, models_used, pricing_summary, notes, updated_at
+			 FROM caixa.dim_ai_subscription
+			 ORDER BY cost_usd DESC, balance_usd DESC, name ASC`
+		);
+		return q.rows;
+	}
+	if (colecao === 'ai_pricing') {
+		const q = await pool.query(
+			`SELECT id, provider_key, model_name,
+			        input_cache_hit_usd::float8, input_cache_miss_usd::float8, output_usd::float8,
+			        context_window, notes
+			 FROM caixa.dim_ai_model_pricing
+			 ORDER BY provider_key, model_name`
+		);
+		return q.rows;
+	}
+	if (colecao === 'ai_summary') {
+		const q = await pool.query(
+			`SELECT total_active_services::int, total_recurring_plans::int,
+			        total_monthly_cost_usd::float8, total_monthly_cost_brl::float8,
+			        total_available_credits_usd::float8, total_month_spent_usd::float8,
+			        total_historical_spent_usd::float8, next_renewal_date
+			 FROM caixa.v_ai_subscriptions_summary`
+		);
+		return q.rows[0] ?? null;
+	}
+	if (colecao === 'bootstrap') {
+		if (!PERIODO.test(periodo ?? '')) return null;
+		const year = parseInt(periodo.slice(0, 4), 10);
+		const startMes = `${year - 2}-01`;
+		const [
+			mesRows,
+			sankeyRows,
+			compras,
+			regras,
+			viagens,
+			ferias,
+			importacoes,
+			faturasPendentes,
+			pendenciasRows,
+			pessoas,
+			lugares,
+			vinculos,
+			contratos,
+			contas,
+			blocos,
+			refAtual
+		] = await Promise.all([
+			pool.query(
+				`SELECT mes, escopo, categoria_id,
+				        custo_recorrente::float8 AS custo_recorrente,
+				        custo_extraordinario::float8 AS custo_extraordinario
+				 FROM caixa.v_custo_mensal
+				 WHERE mes >= $1 AND mes <= $2`,
+				[startMes, periodo]
+			),
+			pool.query(
+				`SELECT periodo, nivel, origem, destino, valor::float8 AS valor, coalesce(tipo, '') AS tipo
+				 FROM caixa.sankey_link
+				 WHERE periodo >= $1 AND periodo <= $2
+				 ORDER BY periodo, nivel, ordem`,
+				[startMes, periodo]
+			),
+			rows('compra', null),
+			rows('regras', null),
+			rows('viagens', null),
+			rows('ferias', null),
+			rows('importacoes', null),
+			rows('faturas', null),
+			rows('pendencias', String(year)),
+			rows('pessoas', null),
+			rows('lugares', null),
+			rows('vinculos', null),
+			rows('contratos', null),
+			rows('contas', null),
+			rows('blocos', null),
+			rows('referencia', periodo)
+		]);
+		const months = {};
+		for (const r of mesRows.rows) {
+			(months[r.mes] ??= []).push(r);
+		}
+		const sankey = {};
+		for (const r of sankeyRows.rows) {
+			(sankey[r.periodo] ??= []).push(r);
+		}
+		return {
+			months,
+			sankey,
+			compras,
+			referencia: { [periodo]: refAtual },
+			regras,
+			viagens,
+			ferias,
+			importacoes,
+			faturasPendentes,
+			pendencias: pendenciasRows[0] ?? null,
+			pessoas,
+			lugares,
+			vinculos,
+			contratos,
+			contas,
+			blocos
+		};
+	}
 	return null;
 }
 
@@ -293,9 +511,15 @@ const handler = {
 		const colecao = parts[0] ?? '';
 		const periodo = parts[1] ?? null;
 		if (!(await userId(request))) return json(401, { error: 'unauthorized' }, origin);
-		const data = await rows(colecao, periodo);
-		if (data == null) return json(404, { error: 'unknown' }, origin);
-		return json(200, { data }, origin);
+		try {
+			const data = await rows(colecao, periodo);
+			if (data == null) return json(404, { error: 'unknown' }, origin);
+			return json(200, { data }, origin);
+		} catch (err) {
+			const msg = String(err?.name ?? 'Error');
+			console.error(JSON.stringify({ event: 'leitura_error', colecao, error: msg }));
+			return json(500, { error: 'internal' }, origin);
+		}
 	}
 };
 
