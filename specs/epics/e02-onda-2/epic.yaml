@@ -1,0 +1,32 @@
+type: epic
+context: big-caixa/onda-2
+id: e02
+slug: onda-2
+title: 'Onda 2 — Contrato da Topbar & Taxonomia (Sidebar & Ledger Context)'
+wsjf: 9.2
+bcps: 6
+scope:
+  in:
+    - 'Tirar Período/Escopo/Base e faixa Mostrando da topbar global fixa para componente dedicado LedgerContextBar'
+    - 'Exibir LedgerContextBar condicionalmente apenas nas telas contábeis/analíticas que respondem ao razão (hoje, visao, fluxo, mes, compras, ano, metas)'
+    - 'Reorganizar a taxonomia da sidebar (MOM em book.svelte.ts) nos 5 pilares coesos: Hoje, Entender/Razão, Vida & Compromissos, Nossa Casa, Operação/Cuidar'
+    - 'Mover /ia (Assinaturas) de Cuidar para Viver/Compromissos'
+    - 'Remover resíduos de protótipo: botão "Ver no celular" da sidebar e rota vazia /projetos da navegação'
+    - 'Tornar botão "Fechar mês" dinâmico com base no mês ativo/anterior em vez de hardcoded "Fechar outubro"'
+    - 'Cobrir com testes unitários e de integração sem quebrar E2E nem preflight'
+  out:
+    - 'Desacoplamento de rotas SvelteKit nativas sem renderVals() (Onda 3)'
+    - 'Fatiamento de book.svelte.ts em stores independentes (Onda 3)'
+stories:
+  - id: e02s01
+    title: 'Create LedgerContextBar & decouple global header from ledger context'
+    wsjf: 9.5
+    bcps: 2
+  - id: e02s02
+    title: 'Reorganize sidebar MOM taxonomy and dynamic Fechar Mês button'
+    wsjf: 9.0
+    bcps: 2
+  - id: e02s03
+    title: 'Comprehensive tests and preflight verification'
+    wsjf: 8.5
+    bcps: 2

@@ -1,5 +1,5 @@
 version: 1
-active_epic: e01
+active_epic: e02
 stories:
   e01s01:
     title: 'Create shared UI primitives (Money, PageHeader, DataState, SegmentedTabs)'
@@ -16,3 +16,13 @@ stories:
     status: done
     started_at: '2026-11-26T13:35:30-03:00'
     completed_at: '2026-11-26T13:39:00-03:00'
+  e02s01:
+    title: 'Create LedgerContextBar & decouple global header from ledger context'
+    status: in_progress
+    started_at: '2026-11-26T18:14:00-03:00'
+  e02s02:
+    title: 'Reorganize sidebar MOM taxonomy and dynamic Fechar Mês button'
+    status: pending
+  e02s03:
+    title: 'Comprehensive tests and preflight verification'
+    status: pending

@@ -6,9 +6,20 @@ epics:
     title: 'Onda 1 — Homogeneidade Visual & Privacidade (UI Primitives)'
     wsjf: 9.5
     bcps: 8
-    status: in_progress
+    status: done
     capsule: specs/epics/e01-onda-1/
     stories:
       - e01s01
       - e01s02
       - e01s03
+  - id: e02
+    slug: onda-2
+    title: 'Onda 2 — Contrato da Topbar & Taxonomia (Sidebar & Ledger Context)'
+    wsjf: 9.2
+    bcps: 6
+    status: in_progress
+    capsule: specs/epics/e02-onda-2/
+    stories:
+      - e02s01
+      - e02s02
+      - e02s03
