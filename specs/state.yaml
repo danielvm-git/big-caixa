@@ -1,0 +1,15 @@
+version: 1
+current_phase: step_4_complete
+active_branch: main
+last_merged_pr: 5
+commit_sha: b83e36e
+status: green
+steps:
+  step_1_audit_and_cleanup: done
+  step_2_deferred_items: done
+  step_3_neon_and_cloud_sync: done
+  step_4_strangler_fig_phase2: done
+decisions:
+  - id: D-001
+    gate: strangler_fig_phase2
+    reason: Extracted formatting, mock fixtures, and core views into dedicated modules to shrink monolithic book.svelte.ts and LivroApp.svelte.
