@@ -1,14 +1,15 @@
 # big-caixa
 
-SvelteKit estático; leitura/escrita via Neon Functions no schema `caixa` (Postgres). O SQLite em My_Finances é legado — só `scripts/copy-sqlite-to-neon.mjs` para migração pontual.
+SvelteKit + servidor Node (`server/`) com SQLite (`db/schema.sql`). Produção no Oracle
+via Kamal, atrás do Cloudflare Access; o servidor também confere o JWT do Access.
 
 ## Observability
 
-| O quê             | Comando                                         |
-| ----------------- | ----------------------------------------------- |
-| Logs JSON         | `tail -f logs/app.jsonl`                        |
-| Health local      | `bash scripts/health.sh`                        |
-| Setup idempotente | `bash scripts/setup.sh`                         |
-| Consulta SQLite   | `bash scripts/consulta.sh custo-mensal 2026-11` |
+| O quê             | Comando                  |
+| ----------------- | ------------------------ |
+| Health local      | `bash scripts/health.sh` |
+| Setup idempotente | `bash scripts/setup.sh`  |
+| Dev local         | `bash run_local.sh`      |
 
-Nunca logar valores, lojas, e-mails ou tokens.
+Logs do servidor: JSON por linha (`event`, `method`, `path`, `status`, `ms`).
+Nunca logar valores, lojas, e-mails, query strings ou tokens.

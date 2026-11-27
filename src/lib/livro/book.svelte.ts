@@ -2040,15 +2040,15 @@ export class Book {
 		return this.renderVals();
 	}
 	async signOut() {
-		try {
-			const { signOutNeon } = await import('$lib/auth/neon');
-			await Promise.race([signOutNeon(), new Promise((resolve) => setTimeout(resolve, 4000))]);
-		} catch {
-			/* já saiu */
-		}
 		const { clearSession } = await import('$lib/auth/session');
 		clearSession();
 		this.set({ auth: false, pwd: '' });
+		const { AUTH_MODE } = await import('$lib/auth/api');
+		if (AUTH_MODE === 'server') {
+			// Encerra a sessão do Cloudflare Access (rota do próprio Access no domínio do site).
+			window.location.assign('/cdn-cgi/access/logout');
+			return;
+		}
 		await goto('/login/');
 	}
 	mv(i, d) {

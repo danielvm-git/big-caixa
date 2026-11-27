@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { AUTH_MODE } from '$lib/auth/api';
-	import { signInWithGoogle, fetchNeonSession } from '$lib/auth/neon';
+	import { AUTH_MODE, fetchServerSession } from '$lib/auth/api';
 	import { setSession } from '$lib/auth/session';
 
 	let err = $state('');
@@ -13,20 +12,18 @@
 			await goto('/hoje/');
 			return;
 		}
-		const s = await fetchNeonSession();
+		if (AUTH_MODE === 'mock') return;
+		const s = await fetchServerSession().catch(() => null);
 		if (s) {
 			setSession(s);
 			await goto('/hoje/');
 		}
 	});
 
-	async function entrar() {
+	// O login é do Cloudflare Access: recarregar a página manda de volta para ele.
+	function entrar() {
 		err = '';
-		try {
-			await signInWithGoogle(`${window.location.origin}/hoje/`);
-		} catch (e) {
-			err = e instanceof Error ? e.message : 'Falha ao abrir o Google';
-		}
+		window.location.assign('/hoje/');
 	}
 
 	async function mockLogin() {
@@ -80,14 +77,15 @@
 				onclick={entrar}
 				style="background:var(--sun);color:var(--onsun);border:0;border-radius:10px;padding:12px;font-size:15px;font-weight:600;cursor:pointer"
 			>
-				Entrar com Google
+				Entrar
 			</button>
 			{#if AUTH_MODE === 'mock'}
 				<button class="btn" type="button" onclick={mockLogin}>Entrar (só e2e)</button>
 			{/if}
 		</div>
 		<div style="font-size:12px;color:var(--mut);display:flex;gap:8px;align-items:center">
-			<i class="ph ph-lock-simple"></i>Os dados são só nossos: acesso protegido via Google Auth.
+			<i class="ph ph-lock-simple"></i>Os dados são só nossos: acesso protegido pelo Cloudflare
+			Access.
 		</div>
 	</div>
 </div>

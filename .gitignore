@@ -20,11 +20,13 @@ Thumbs.db
 *.sqlite-shm
 *.sqlite-wal
 *.db
+*.db-shm
+*.db-wal
+local/
 *.csv
 *.pdf
 logs/
 deploy-meta.json
-specs/neon-auth.env
 .data/
 scripts/local/
 

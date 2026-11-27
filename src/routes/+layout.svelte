@@ -2,7 +2,7 @@
 	import '../app.css';
 	import { onMount, untrack } from 'svelte';
 	import { page } from '$app/state';
-	import { fetchNeonSession } from '$lib/auth/neon';
+	import { fetchServerSession } from '$lib/auth/api';
 	import { getSession, initSessionContext, setSession } from '$lib/auth/session';
 	import { goto } from '$app/navigation';
 	import { log } from '$lib/log';
@@ -24,8 +24,8 @@
 					setSession({ token: 'local-token', email: 'daniel@casa.exemplo' });
 				} else {
 					try {
-						const neon = await fetchNeonSession();
-						if (neon) setSession(neon);
+						const sessao = await fetchServerSession();
+						if (sessao) setSession(sessao);
 					} catch {
 						// Falha de rede não pode deixar a página em Carregando.
 					}

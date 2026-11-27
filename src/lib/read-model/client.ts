@@ -52,11 +52,9 @@ type Colecao =
 	| 'ai_summary'
 	| 'bootstrap';
 
+/** Leitura no mesmo endereço do site (`/api/leitura`); em dev o Vite repassa ao servidor local. */
 function caixaBase(): string {
-	const fromEnv = import.meta.env.VITE_CAIXA_URL as string | undefined;
-	if (fromEnv) return fromEnv.replace(/\/$/, '');
-	if (AUTH_MODE === 'local' || !import.meta.env.PROD) return 'http://localhost:8787';
-	return '';
+	return '/api/leitura';
 }
 
 function useFixtures(): boolean {
@@ -67,11 +65,10 @@ function useFixtures(): boolean {
 }
 
 async function readRaw<T>(colecao: Colecao, periodo?: string): Promise<T | null> {
-	const token = getSession()?.token;
+	if (!getSession()) throw new Error('leitura indisponível');
 	const base = caixaBase();
-	if (!token || !base) throw new Error('leitura indisponível');
 	const path = periodo ? `${base}/${colecao}/${periodo}` : `${base}/${colecao}`;
-	const res = await fetch(path, { headers: { Authorization: `Bearer ${token}` } });
+	const res = await fetch(path, { credentials: 'same-origin' });
 	if (!res.ok) throw new Error(`leitura ${res.status}`);
 	const json = (await res.json()) as { data?: T | null };
 	return json.data ?? null;
