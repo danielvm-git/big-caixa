@@ -11,7 +11,7 @@ const h=require('./build/health.json');
 if(!h.version||!h.sha) process.exit(2);
 console.log('health local:', h.version, h.sha);
 "
-SITE_URL="${SITE_URL:-https://big-caixa.bigbase.click}"
+SITE_URL="${SITE_URL:-https://caixa.danielvm.net}"
 code=$(curl -s -o /dev/null -w '%{http_code}' "$SITE_URL/health.json" || echo 000)
 if [ "$code" = "200" ]; then
   echo "health remote: $SITE_URL/health.json ok"

@@ -1,0 +1,57 @@
+# Kamal 2 — livro-caixa no Oracle A1 (produção), alcançado pela tailnet.
+# Deploy só pelo GitHub Actions (.github/workflows/deploy.yml).
+service: caixa
+image: danielvm-git/big-caixa
+
+servers:
+  web:
+    hosts:
+      - oracle-prod # nome MagicDNS do Oracle na tailnet
+
+ssh:
+  user: deploy
+  keys_only: true
+  key_data:
+    - KAMAL_SSH_KEY
+
+registry:
+  server: ghcr.io
+  username: danielvm-git
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+builder:
+  arch: arm64 # o CI constrói a imagem; o Kamal nunca constrói
+
+# O Traefik do Appwrite ocupa 80/443 neste host. O kamal-proxy (o mesmo do bolão)
+# escuta só em 127.0.0.1:8080, e o cloudflared (túnel oracle-prod) é o único cliente.
+# Na borda, o Cloudflare Access exige login antes de qualquer requisição chegar aqui.
+proxy:
+  host: caixa.danielvm.net
+  app_port: 3000
+  ssl: false
+  forward_headers: true
+  healthcheck:
+    path: /up
+    interval: 3
+    timeout: 3
+  run:
+    http_port: 8080
+    https_port: 8443
+    bind_ips:
+      - 127.0.0.1
+
+env:
+  clear:
+    CAIXA_DB: /data/caixa.db
+    PORT: '3000'
+    TZ: America/Sao_Paulo
+  secret:
+    - CF_ACCESS_TEAM_DOMAIN
+    - CF_ACCESS_AUD
+    - CAIXA_ALLOWED_EMAILS
+
+volumes:
+  - /srv/caixa:/data # caixa.db (WAL); o Litestream copia para o Contabo
+
+retain_containers: 3

@@ -6,6 +6,8 @@ export default defineConfig({
 	define: {
 		__APP_VERSION__: JSON.stringify(repoVersion())
 	},
+	// Em dev, /api vai para o servidor local (npm run dev:server, porta 8787).
+	server: { proxy: { '/api': 'http://localhost:8787' } },
 	plugins: [
 		sveltekit({
 			alias: { $lib: 'src/lib' },

@@ -1,18 +1,35 @@
 # big-caixa
 
-Web app **big-caixa**: SvelteKit estático hospedado no [BigBase](https://bigbase.click). O livro autoritativo fica no **Postgres do Neon** (schema `caixa`); a leitura passa pela Function `leitura` no branch **production**. Staging e produção no site usam a mesma `VITE_CAIXA_URL`; os branches `production` e `staging` no Neon recebem a mesma carga com `node scripts/copy-sqlite-to-neon.mjs production staging` (última migração do SQLite legado).
+Livro-caixa da casa: site SvelteKit e uma API pequena em Node, servidos pelo mesmo
+processo. Os dados ficam num arquivo SQLite (`/data/caixa.db`) no Oracle, com cópia
+contínua para o Contabo pelo Litestream. Produção: `https://caixa.danielvm.net`, atrás
+do **Cloudflare Access** (só e-mails da lista entram).
+
+## Como funciona
+
+| Parte                                            | Onde                                                      |
+| ------------------------------------------------ | --------------------------------------------------------- |
+| Schema SQLite (tabelas e views)                  | `db/schema.sql` — aplicado a cada boot, idempotente       |
+| Leitura (`GET /api/leitura/:coleção[/:período]`) | `server/leitura.mjs`                                      |
+| Escrita (`POST /api/escrita`, campo `op`)        | `server/escrita.mjs`                                      |
+| Quem está logado (`GET /api/me`)                 | `server/access.mjs` confere o JWT do Access de novo       |
+| Site e rotas                                     | `server/app.mjs` serve `build/`; `/up` é a saúde do Kamal |
+
+O servidor confere em toda chamada à API o JWT que o Access põe em
+`Cf-Access-Jwt-Assertion` (assinatura, emissor, audiência, validade) e exige que o
+e-mail esteja em `CAIXA_ALLOWED_EMAILS`. Sem essa configuração ele não sobe.
 
 ## Desenvolvimento
 
 ```bash
 npm ci
-npm run dev
+bash run_local.sh        # servidor local na 8787 (sem Access) + Vite na 5173
 ```
 
-Login: **Google** via [Neon Auth](docs/NEON_AUTH.md) (`neonctl` + `scripts/neon-auth-setup.sh`).
-`VITE_AUTH_MODE=mock` (só e2e) usa o botão de mock na tela de login.
+O banco local fica em `local/caixa.db` (ignorado pelo git). `VITE_AUTH_MODE=mock`
+(só e2e) usa dados de exemplo.
 
-E2E: `npx playwright install chromium && npm run test:e2e` (o webServer faz build em modo mock e `preview` na 4173).
+E2E: `npx playwright install chromium && npm run test:e2e`.
 
 ## Qualidade
 
@@ -22,32 +39,16 @@ npm run typecheck
 npm run test
 npm run build
 npm run preflight
-bash scripts/setup.sh
 ```
 
-## Dados (Neon)
+## Deploy
 
-```bash
-npm run caixa:migrate
-# migração legada SQLite → Neon (uma vez, se ainda precisar):
-node scripts/copy-sqlite-to-neon.mjs production staging
-```
+Só pelo GitHub Actions: `Test Build Release` testa, constrói a imagem arm64 e a
+atesta; `Deploy` confere a atestação, entra na tailnet (OIDC) e roda o Kamal no
+Oracle. Passo a passo e segredos: [docs/DEPLOY.md](docs/DEPLOY.md).
 
-## Deploy (GitHub Actions)
+## Migração do Neon (uma vez)
 
-Workflows em `.github/workflows/` (templates v1 de `danielvm-git/.github`). Versão e GitHub Release:
-[`big-release`](https://github.com/danielvm-git/big-release) com config em `.big-release.yml` (substitui
-semantic-release nos templates estáticos antigos).
-
-**O job Deploy falha até existir:**
-
-1. Site `big-caixa` no BigBase apontando para este repo
-2. Secrets no environment `production`:
-   - `BIGBASE_SITE_ID`
-   - `BIGBASE_DEPLOY_TOKEN` (`bb_dep_…`)
-
-3. Origem `https://big-caixa.bigbase.click` allowlisted para CORS na API de auth
-
-Passo a passo e verificação local: [docs/DEPLOY.md](docs/DEPLOY.md).
-
-Ver [discussão 192 do BigBase](https://github.com/danielvm-git/bigbase/discussions/192).
+`scripts/copy-neon-to-sqlite.mjs` copia o schema `caixa` do Neon para um SQLite novo
+e confere tabela por tabela e as views de custo. Sai do repo quando o Neon for
+desligado.

@@ -21,8 +21,4 @@ if find build -type f \( -name '*.sqlite*' -o -name '*.csv' -o -name '*.pdf' \) 
 	echo "ERRO: dado financeiro no bundle"; exit 1
 fi
 test -s build/health.json || { echo "ERRO: build/health.json ausente"; exit 1; }
-if ! grep -rq 'ep-lucky-dawn-bbvltogw' build/_app 2>/dev/null; then
-	echo "ERRO: bundle sem URL Neon Auth — defina VITE_NEON_AUTH_URL ou fallback em neon-public-url.ts"
-	exit 1
-fi
 echo "preflight OK"
