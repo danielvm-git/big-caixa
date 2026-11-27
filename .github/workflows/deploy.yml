@@ -124,7 +124,8 @@ jobs:
       - name: Check Cloudflare Access is enforced
         run: |
           for _ in 1 2 3 4 5 6; do
-            read -r code loc < <(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' "${SITE_URL}/" || true)
+            # Newline in -w: without it `read` hits EOF, returns 1, and bash -e ends the step.
+            read -r code loc < <(curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' "${SITE_URL}/" || true)
             if [[ "$code" == "302" && "$loc" == https://*.cloudflareaccess.com/* ]]; then echo "Access OK"; exit 0; fi
             [[ "$code" == "200" ]] && { echo "::error::${SITE_URL} answered 200 without login: Access is not protecting it"; exit 1; }
             sleep 10
