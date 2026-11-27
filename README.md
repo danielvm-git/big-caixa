@@ -47,8 +47,9 @@ Só pelo GitHub Actions: `Test Build Release` testa, constrói a imagem arm64 e 
 atesta; `Deploy` confere a atestação, entra na tailnet (OIDC) e roda o Kamal no
 Oracle. Passo a passo e segredos: [docs/DEPLOY.md](docs/DEPLOY.md).
 
-## Migração do Neon (uma vez)
+## Histórico
 
-`scripts/copy-neon-to-sqlite.mjs` copia o schema `caixa` do Neon para um SQLite novo
-e confere tabela por tabela e as views de custo. Sai do repo quando o Neon for
-desligado.
+Até 2026-11-27 o livro ficava no Postgres do Neon, com Functions e Neon Auth. Foi
+copiado para o SQLite com conferência tabela por tabela, e o projeto do Neon foi
+apagado. O dump completo do Neon ficou no Contabo
+(`/backup/neon-big-caixa-production-20261127.dump`).

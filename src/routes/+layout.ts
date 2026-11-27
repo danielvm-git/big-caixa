@@ -1,4 +1,4 @@
 export const prerender = true;
 export const ssr = false;
-/** BigBase usa FileServer: rotas vão em `/login/index.html` (URL `/login/`). */
+/** Cada rota vira `<rota>/index.html` no build (URL `/rota/`); o servidor serve esse arquivo. */
 export const trailingSlash = 'always';

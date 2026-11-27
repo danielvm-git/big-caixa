@@ -5,7 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
-		"build": "vite build && node scripts/write-health.mjs && node scripts/static-fileserver-layout.mjs",
+		"build": "vite build && node scripts/write-health.mjs",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"lint": "prettier --check . && eslint .",
@@ -29,7 +29,6 @@
 		"eslint-plugin-svelte": "^3.24.1",
 		"globals": "^17.14.0",
 		"jsdom": "^31.0.1",
-		"pg": "^8.23.1",
 		"prettier": "^3.10.1",
 		"prettier-plugin-svelte": "^4.2.0",
 		"svelte": "^5.57.3",
@@ -41,7 +40,7 @@
 		"vite": "^8.3.8",
 		"vitest": "^5.1.1"
 	},
-	"description": "big-caixa: casca estática SvelteKit sobre o BigBase",
+	"description": "big-caixa: livro-caixa da casa — SvelteKit + servidor Node com SQLite, atrás do Cloudflare Access",
 	"engines": {
 		"node": ">=22"
 	},
